@@ -910,7 +910,7 @@ export default function CanvasResultModal({ isOpen, onClose, nodeTitle, nodeType
             </p>
             {dsId ? (
               <a 
-                href={`http://localhost:5000/api/v1/datasets/${dsId}/report/professional/${format}`}
+                href={`${import.meta.env.VITE_API_URL || ''}/api/v1/datasets/${dsId}/report/professional/${format}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors shadow-lg shadow-emerald-500/20"
