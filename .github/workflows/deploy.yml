@@ -1,0 +1,34 @@
+name: Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ["OpenStats CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # S'exécute uniquement si le workflow CI précédent a réussi
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Deploy Backend to Render
+        # Remplacez ceci par votre véritable hook de déploiement Render dans les secrets GitHub
+        # Settings > Secrets and variables > Actions > New repository secret
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+      - name: Deploy Frontend to Netlify
+        # De même, pour Netlify (ou Vercel), vous pouvez utiliser le build hook
+        if: env.NETLIFY_BUILD_HOOK != ''
+        run: curl -X POST -d '' ${{ secrets.NETLIFY_BUILD_HOOK }}
+        env:
+          NETLIFY_BUILD_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+          
+      - name: Deployment Info
+        run: echo "Déploiement déclenché avec succès suite à la validation des tests CI."
