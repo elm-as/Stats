@@ -9,6 +9,16 @@
 [![Category](https://img.shields.io/badge/Category-Data_Science-black?style=for-the-badge&logo=micro-soft-academic&logoColor=white)](#)
 [![Build](https://img.shields.io/badge/Build-v1.0.4--4F8A-gray?style=for-the-badge&logo=githubactions&logoColor=white)](#)
 
+<br/>
+
+![React](https://img.shields.io/badge/-React-10b981?style=for-the-badge&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/-TypeScript-10b981?style=for-the-badge&logo=typescript&logoColor=white)
+![Flask](https://img.shields.io/badge/-Flask-10b981?style=for-the-badge&logo=flask&logoColor=white)
+![Python](https://img.shields.io/badge/-Python-10b981?style=for-the-badge&logo=python&logoColor=white)
+![Supabase](https://img.shields.io/badge/-Supabase-10b981?style=for-the-badge&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-10b981?style=for-the-badge&logo=postgresql&logoColor=white)
+![Celery](https://img.shields.io/badge/-Celery-10b981?style=for-the-badge&logo=celery&logoColor=white)
+
 </div>
 
 ---
