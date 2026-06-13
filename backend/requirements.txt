@@ -53,6 +53,7 @@ PyJWT>=2.8
 
 # LLM Integration
 anthropic>=0.25
+openai>=1.0.0
 
 # Utilities
 chardet>=5.0
