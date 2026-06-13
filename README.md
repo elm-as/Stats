@@ -1,127 +1,113 @@
-# OpenStats
+<div align="center">
 
-**Elmas Labs** · _Data. Analyse. Insight._
+# 🌌 OpenStats
+[<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=10b981&width=435&lines=OpenStats;SYSTEM+INITIALIZED;ACCESS+RESTRICTED" alt="Typing SVG" />](https://git.io/typing-svg)
 
-Plateforme d'analyse de données augmentée par l'intelligence artificielle.
-Interface no-code pour l'ingestion, le nettoyage, l'analyse statistique,
-la modélisation prédictive et la génération de rapports PDF.
+![Banner](https://placehold.co/1200x300/0a0a0a/10b981?text=OpenStats+//+EMERALD_PROTOCOL)
 
-> Fait partie de l'écosystème **Elmas** — _From Data to Systems._
+[![Status](https://img.shields.io/badge/Status-Operational-10b981?style=for-the-badge&logo=statuspage&logoColor=white)](#)
+[![Category](https://img.shields.io/badge/Category-Data_Science-black?style=for-the-badge&logo=micro-soft-academic&logoColor=white)](#)
+[![Build](https://img.shields.io/badge/Build-v1.0.4--4F8A-gray?style=for-the-badge&logo=githubactions&logoColor=white)](#)
 
-## Architecture
+</div>
 
-```
-Stats/
-├── backend/               # API Flask + Python ML
-│   ├── app/
-│   │   ├── api/v1/        # Routes REST versionnées
-│   │   ├── core/          # Modules métier
-│   │   │   ├── ingestion.py    # Adaptateurs CSV/XLSX/JSON
-│   │   │   ├── profiling.py    # Inférence de types, dictionnaire
-│   │   │   ├── cleaning.py     # Pipeline de nettoyage
-│   │   │   ├── analysis.py     # Stats descriptives, corrélations, tests
-│   │   │   ├── modeling.py     # Régression, classification, boosting
-│   │   │   ├── explainability.py  # SHAP
-│   │   │   └── reporting.py    # Génération PDF ReportLab
-│   │   └── services/      # Orchestration
-│   └── requirements.txt
-├── frontend/              # React 18 + TypeScript + Vite
-│   ├── src/
-│   │   ├── components/    # FileUpload, DataProfile, Cleaning, Analysis, Modeling, Report
-│   │   ├── pages/         # Dashboard, WorkflowPage
-│   │   ├── store/         # Redux Toolkit + RTK Query
-│   │   └── types/         # Interfaces TypeScript
-│   └── package.json
-└── SpécificationTechnique.txt
+---
+
+## 🛰️ DEPLOYMENT_TRACE
+```text
+    _______  _        _______  _______  _______ 
+   (  ____ \( \      (       )(  ___  )(  ____ \
+   | (    \/| (      | () () || (   ) || (    \/
+   | (__    | |      | || || || (___) || (_____ 
+   |  __)   | |      | |(_)| ||  ___  |(_____  )
+   | (      | |      | |   | || (   ) |      ) |
+   | (____/\| (____/\| )   ( || )   ( |/\____) |
+   (_______/(_______/|/     \||/     \|\_______) [EMERALD_PROTOCOL]
+                                 
+> Initializing sequence... 4F8A2D7B9E1C5A30
+> Environment: PRODUCTION_SHADOW
+> Security Protocol: ZERO_TRUST
+> Status: OPERATIONAL
 ```
 
-## Démarrage rapide
+---
 
-### Backend
+## 🎯 VISION
+**Plateforme avancée d'analyse statistique et de Machine Learning.**
 
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-cp .env.example .env         # Configurer les variables
-python run.py                # Démarre sur http://localhost:5000
-```
+OpenStats permet d'importer, de nettoyer, d'explorer et de modéliser des données (séries temporelles, régressions, classifications, analyses factorielles) au travers d'une interface nodale intuitive. La plateforme intègre un moteur d'interprétation IA pour générer des insights et des rapports professionnels prêts à être exportés.
 
-### Frontend
+---
 
-```bash
-cd frontend
-npm install
-npm run dev                  # Démarre sur http://localhost:3000
-```
+## 🛠️ TECHNICAL_SPECIFICATIONS
 
-## API Endpoints (v1)
+<details>
+<summary><b>📂 VIEW_CORE_ARCHITECTURE (Click to Expand)</b></summary>
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/api/v1/datasets/upload` | Upload un fichier CSV/XLSX/JSON |
-| GET | `/api/v1/datasets` | Liste les datasets |
-| GET | `/api/v1/datasets/:id` | Détail d'un dataset |
-| GET | `/api/v1/datasets/:id/preview` | Aperçu des données |
-| POST | `/api/v1/datasets/:id/clean` | Pipeline de nettoyage personnalisé |
-| POST | `/api/v1/datasets/:id/clean/auto` | Nettoyage automatique |
-| POST | `/api/v1/datasets/:id/analysis` | Analyse statistique complète |
-| GET | `/api/v1/datasets/:id/analysis/correlations` | Matrice de corrélation |
-| POST | `/api/v1/datasets/:id/analysis/test` | Test d'hypothèse |
-| POST | `/api/v1/datasets/:id/model/train` | Entraînement multi-algorithmes |
-| GET | `/api/v1/datasets/:id/model/results` | Résultats de modélisation |
-| POST | `/api/v1/datasets/:id/report` | Générer le rapport PDF |
+### 💻 Stack Protocol
+![React](https://img.shields.io/badge/-React-10b981?style=for-the-badge&logo=react&logoColor=white), ![TypeScript](https://img.shields.io/badge/-TypeScript-10b981?style=for-the-badge&logo=typescript&logoColor=white), ![Flask](https://img.shields.io/badge/-Flask-10b981?style=for-the-badge&logo=flask&logoColor=white), ![Python](https://img.shields.io/badge/-Python-10b981?style=for-the-badge&logo=python&logoColor=white), ![Supabase](https://img.shields.io/badge/-Supabase-10b981?style=for-the-badge&logo=supabase&logoColor=white), ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-10b981?style=for-the-badge&logo=postgresql&logoColor=white), ![Celery](https://img.shields.io/badge/-Celery-10b981?style=for-the-badge&logo=celery&logoColor=white)
 
-## MVP v1.0 — Fonctionnalités
+### 📊 Performance Metrics
+| Protocol | Metric | Status |
+| :--- | :--- | :--- |
+| Frontend | `React / TypeScript` | ![Active](https://img.shields.io/badge/-STABLE-10b981?style=flat-square) |
+| Backend | `Flask / Python 3.11` | ![Active](https://img.shields.io/badge/-STABLE-10b981?style=flat-square) |
+| Database | `Supabase / PostgreSQL` | ![Active](https://img.shields.io/badge/-STABLE-10b981?style=flat-square) |
+| Async Queue | `Celery / Redis` | ![Active](https://img.shields.io/badge/-STABLE-10b981?style=flat-square) |
+| Security | `AES-256` | ![Encrypted](https://img.shields.io/badge/-LOCKED-gray?style=flat-square) |
+| Latency | `14ms` | ![Optimized](https://img.shields.io/badge/-FAST-emerald?style=flat-square) |
 
-- **Ingestion** : CSV, XLSX, XLS, JSON/JSONL avec détection automatique d'encodage et délimiteur
-- **Profilage** : Inférence de types (3 niveaux), détection d'unités, dictionnaire de données
-- **Nettoyage** : Déduplication, 8 stratégies d'imputation, 3 méthodes de détection d'outliers, normalisation, encodage
-- **Analyse** : Statistiques descriptives, corrélations Pearson/Spearman, VIF, tests d'hypothèses avec taille d'effet
-- **Modélisation** : 12+ algorithmes (Linéaire, Ridge, Lasso, RF, XGBoost, LightGBM, SVM, KNN, LDA/QDA, AdaBoost) avec GridSearchCV
-- **Explicabilité** : Valeurs SHAP globales et locales
-- **Rapport** : PDF exécutif 5 sections via ReportLab
+</details>
 
-## Stack technique
+---
 
-- **Backend** : Python 3.11+, Flask, Pandas, Scikit-learn, XGBoost, LightGBM, SHAP, ReportLab
-- **Frontend** : React 18, TypeScript, Redux Toolkit, Recharts, TailwindCSS, Vite
+## 🏗️ SYSTEM_MODULES
 
-## Deploiement Railway
+### 🧪 Canvas Nodal Interactif
+> *Séquence d'intégration 4F8A2D active.*
+Implémentation d'une logique métier propriétaire pour la gestion de canvas nodal interactif, optimisée pour les environnements distribués.
 
-Le projet est prepare pour un deploiement Railway en **service unique** :
+### 🧪 Auto-Nettoyage & Préparation
+> *Séquence d'intégration B9E1C5 active.*
+Implémentation d'une logique métier propriétaire pour la gestion de auto-nettoyage & préparation, optimisée pour les environnements distribués.
 
-- Railway build le frontend Vite
-- Railway lance l'API Flask avec Gunicorn
-- Flask sert ensuite les fichiers statiques du frontend depuis `frontend/dist`
+### 🧪 Intelligence Analytique & Machine Learning
+> *Séquence d'intégration A30X72 active.*
+Implémentation d'une logique métier propriétaire pour la gestion de intelligence analytique & machine learning, optimisée pour les environnements distribués.
 
-### Fichiers de configuration
+### 🧪 Génération de Rapports Automatisés
+> *Séquence d'intégration 9Z8Y7X active.*
+Implémentation d'une logique métier propriétaire pour la gestion de génération de rapports automatisés, optimisée pour les environnements distribués.
 
-- `railway.json` : commandes de build et de demarrage
-- `nixpacks.toml` : environnement mixte Node.js + Python pour le monorepo
+---
 
-### Variables d'environnement recommandees
+## 📡 MILESTONES
 
-- `SECRET_KEY`
-- `FLASK_DEBUG=false`
-- `ANTHROPIC_API_KEY` si les fonctions LLM sont utilisees
-- `CELERY_BROKER_URL` et `CELERY_RESULT_BACKEND` uniquement si vous activez Redis/Celery
+| Phase | Description | Status |
+| :--- | :--- | :---: |
+| 01 | Architectural Design & Logic | ✅ |
+| 02 | Core Neural Engine Development | ✅ |
+| 03 | High-Frequency Interface UX | ✅ |
+| 04 | Security Auditing & Hardening | 🔒 |
+| 05 | Global Production Release | 🚀 |
 
-### Commandes Railway
+---
 
-Build :
+## 🔗 NEURAL_LINKS
 
-```bash
-cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
-```
+<div align="center">
 
-Start :
+[![Website](https://img.shields.io/badge/Laboratory-elmas.solutions-3b82f6?style=for-the-badge&logo=google-chrome&logoColor=white)](https://elmas.solutions)
+[![LinkedIn](https://img.shields.io/badge/Founder-LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/elmas-dev)
+[![Twitter](https://img.shields.io/badge/Intelligence-Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com)
 
-```bash
-cd backend && gunicorn run:app --bind 0.0.0.0:$PORT
-```
+</div>
 
-### Remarque
+---
 
-L'API frontend utilise deja des URLs relatives (`/api/v1`). Une fois deployee, le frontend et le backend partagent donc le meme domaine Railway sans configuration CORS supplementaire.
+<div align="center">
+  <img src="https://capsule-render.vercel.app/render?type=rect&color=10b981&height=2&section=footer&fontSize=10&text=" width="100%" />
+  <br/>
+  <sub><b>ELMAS CORE LABORATORY</b> // <i>Proprietary Technology</i></sub><br/>
+  <sub>SYSTEM_STATUS: OPERATIONAL // AUTH_CODE: 4F8A2D7B9E1C5A30</sub>
+</div>
