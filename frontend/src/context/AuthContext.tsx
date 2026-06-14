@@ -36,6 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: currentSession.user.email || '',
             display_name: currentSession.user.user_metadata?.display_name || currentSession.user.email?.split('@')[0] || 'User',
             role: 'analyst',
+            is_active: true,
+            google_id: null,
             created_at: currentSession.user.created_at,
             last_login: currentSession.user.last_sign_in_at || new Date().toISOString(),
           },
