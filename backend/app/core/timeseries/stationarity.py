@@ -19,7 +19,7 @@ def test_stationarity(series: pd.Series) -> dict[str, Any]:
             "lags_used": int(adf_lag),
             "n_obs": int(adf_nobs),
             "critical_values": {k: _sf(v) for k, v in adf_crit.items()},
-            "is_stationary": adf_p < 0.05,
+            "is_stationary": bool(adf_p < 0.05),
             "interpretation": (
                 "Série stationnaire (rejet de H0)" if adf_p < 0.05
                 else "Série non-stationnaire (H0 non rejetée)"
@@ -36,7 +36,7 @@ def test_stationarity(series: pd.Series) -> dict[str, Any]:
             "p_value": _sf(kpss_p),
             "lags_used": int(kpss_lag),
             "critical_values": {k: _sf(v) for k, v in kpss_crit.items()},
-            "is_stationary": kpss_p > 0.05,
+            "is_stationary": bool(kpss_p > 0.05),
             "interpretation": (
                 "Série stationnaire (H0 non rejetée)" if kpss_p > 0.05
                 else "Série non-stationnaire (rejet de H0)"
@@ -58,7 +58,7 @@ def test_stationarity(series: pd.Series) -> dict[str, Any]:
     else:
         results["conclusion"] = "Série non-stationnaire (ADF ✗, KPSS ✗)"
 
-    results["is_stationary"] = adf_ok and kpss_ok
+    results["is_stationary"] = bool(adf_ok and kpss_ok)
 
     return results
 

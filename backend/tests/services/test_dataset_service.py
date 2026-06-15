@@ -1,3 +1,4 @@
+import io
 import pytest
 import os
 import pandas as pd
@@ -24,9 +25,11 @@ def mock_ingest_file():
 def test_ingest_creates_dataset(app, test_user, mock_storage, mock_ingest_file):
     """Vérifie que l'ingestion crée bien un dataset et ses versions."""
     manager = DatasetManager()
-    
-    # Simuler la taille du fichier
-    with patch("os.path.getsize", return_value=1024):
+    mock_profile = {"columns": {}, "rows": 2}
+
+    # Simuler la taille du fichier et le profilage (évite de dépendre du vrai profiler)
+    with patch("os.path.getsize", return_value=1024), \
+         patch("app.services.dataset_service.profile_dataframe", return_value=mock_profile):
         dataset_id = manager.ingest("dummy_path.csv", name="Test Dataset", uploaded_by=test_user.id)
         
     ds = db.session.get(Dataset, dataset_id)
@@ -56,7 +59,7 @@ def test_quota_limits(client, test_user, mock_storage, mock_ingest_file):
     
     # Nous simulons une requête multipart
     data = {
-        'file': (b"dummy content", 'test.csv')
+        'file': (io.BytesIO(b"dummy content"), 'test.csv')
     }
     response = client.post(
         "/api/v1/datasets/upload", 

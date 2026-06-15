@@ -327,8 +327,12 @@ class DatasetManager:
         if df is None:
             raise ValueError(f"Dataset {dataset_id} introuvable")
 
+        # Filtrer uniquement les kwargs acceptés par run_hypothesis_test
+        _ALLOWED = {"test_type", "group_col", "value_col", "col1", "col2"}
+        filtered = {k: v for k, v in test_config.items() if k in _ALLOWED and v is not None}
+
         t0 = time.time()
-        result = run_hypothesis_test(df, **test_config)
+        result = run_hypothesis_test(df, **filtered)
         duration = int((time.time() - t0) * 1000)
 
         self._save_analysis(dataset_id, "test", test_config, result, duration)

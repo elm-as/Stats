@@ -16,7 +16,8 @@ import type {
   ModelResults,
 } from '../types';
 import { FeatureImportance } from './viz';
-import Plot from 'react-plotly.js';
+import ReactPlotly from 'react-plotly.js';
+const Plot = (ReactPlotly as any).default || ReactPlotly;
 import { DARK_TEMPLATE, DEFAULT_CONFIG } from './viz/PlotlyBase';
 import {
   BarChart3, TrendingUp, AlertTriangle, GitCompare, Layers, PieChart,

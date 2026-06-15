@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🌌 OpenStats
-[<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=10b981&width=435&lines=OpenStats;SYSTEM+INITIALIZED;ACCESS+RESTRICTED" alt="Typing SVG" />](https://git.io/typing-svg)
+[<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=10b981&width=435&lines=OpenStats;SYSTEM+INITIALIZED;DATA+INTELLIGENCE" alt="Typing SVG" />](https://git.io/typing-svg)
 
 **Plateforme d'analyse statistique et de Machine Learning avec interface nodale interactive.**
 
@@ -10,12 +10,17 @@ Importez vos données, construisez vos pipelines visuellement, exécutez des ana
 [![Status](https://img.shields.io/badge/Status-Operational-10b981?style=for-the-badge&logo=statuspage&logoColor=white)](#)
 [![Category](https://img.shields.io/badge/Category-Data_Science-black?style=for-the-badge&logo=micro-soft-academic&logoColor=white)](#)
 [![Build](https://img.shields.io/badge/Build-v1.0.4--4F8A-gray?style=for-the-badge&logo=githubactions&logoColor=white)](#)
+<br/>
+[![Live Demo](https://img.shields.io/badge/Demo-Try_it_Live-10b981?style=for-the-badge&logo=play&logoColor=white)](#)
 
 </div>
 
 ---
 
-![OpenStats](assets/dashboard.png)
+<!-- TODO: Remplacer par un vrai GIF montrant le drag & drop des noeuds -->
+![OpenStats Demo](assets/demo.gif)
+
+> **💡 Try it out!** Importez notre [Dataset d'Exemple (Titanic.csv)](assets/titanic_example.csv) pour tester immédiatement la puissance du nettoyage auto et des analyses descriptives.
 
 ---
 
@@ -25,7 +30,7 @@ Importez vos données, construisez vos pipelines visuellement, exécutez des ana
 - **24+ analyses statistiques et ML** (Séries temporelles, Régression, Classification, Clustering, Factorielle...)
 - **Nettoyage automatique** et préparation des données
 - **Import** depuis des fichiers CSV / XLSX
-- **Interprétation IA** intégrée pour générer des insights
+- **Interprétation IA (via API Gemini / LLM)** intégrée pour générer des insights textuels statistiques clairs
 - **Rapports automatiques** et export PDF professionnel
 
 ---
@@ -123,18 +128,10 @@ npm run dev
   <br/>
 
 ```text
-    _______  _        _______  _______  _______ 
-   (  ____ \( \      (       )(  ___  )(  ____ \
-   | (    \/| (      | () () || (   ) || (    \/
-   | (__    | |      | || || || (___) || (_____ 
-   |  __)   | |      | |(_)| ||  ___  |(_____  )
-   | (      | |      | |   | || (   ) |      ) |
-   | (____/\| (____/\| )   ( || )   ( |/\____) |
-   (_______/(_______/|/     \||/     \|\_______) [EMERALD_PROTOCOL]
-                                 
+[EMERALD_PROTOCOL]
 > Initializing sequence... 4F8A2D7B9E1C5A30
-> Environment: PRODUCTION_SHADOW
-> Security Protocol: ZERO_TRUST
+> Environment: PRODUCTION_READY
+> Security Protocol: API_SECURE
 > Status: OPERATIONAL
 ```
 

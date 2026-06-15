@@ -488,6 +488,7 @@ def train_competitive(
         "task_type": task_type,
         "ranking": ranking,
         "failed": failed,
+        "best_model": best_model,
         "best_model_key": ranking[0]["model_key"] if ranking else None,
         "feature_names": data.get("feature_names", []),
         "diagnostics": diagnostics,

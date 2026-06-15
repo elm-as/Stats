@@ -263,7 +263,7 @@ def check_normality(series: pd.Series) -> dict:
         "test": test_name,
         "statistic": round(float(stat), 4),
         "p_value": round(float(p), 4),
-        "passed": p > 0.05,
+        "passed": bool(p > 0.05),
         "message": "Distribution compatible avec la normalité" if p > 0.05
                    else "Distribution significativement non normale",
     }
@@ -280,7 +280,7 @@ def check_homoscedasticity(df: pd.DataFrame, group_col: str, value_col: str) -> 
         "test": "levene",
         "statistic": round(float(stat), 4),
         "p_value": round(float(p), 4),
-        "passed": p > 0.05,
+        "passed": bool(p > 0.05),
         "message": "Variances homogènes" if p > 0.05 else "Variances significativement différentes",
     }
 

@@ -286,6 +286,14 @@ def run_mca(df: pd.DataFrame, columns: list[str] | None = None, n_components: in
     if n_obs < 3:
         raise ValueError("Pas assez d'observations pour l'ACM")
 
+    # Cap à 5000 lignes pour éviter une explosion mémoire (SVD sur matrice n×n)
+    _MAX_ROWS_MCA = 5000
+    sampled = False
+    if n_obs > _MAX_ROWS_MCA:
+        data = data.sample(n=_MAX_ROWS_MCA, random_state=42)
+        n_obs = _MAX_ROWS_MCA
+        sampled = True
+
     variables = data.columns.tolist()
     n_vars = len(variables)
 
@@ -375,6 +383,7 @@ def run_mca(df: pd.DataFrame, columns: list[str] | None = None, n_components: in
         "n_components": keep,
         "variables": variables,
         "component_labels": component_labels,
+        "sampled": sampled,
         "eigenvalues": [_safe(e) for e in eigenvalues],
         "explained_variance_ratio": [_safe(v) for v in explained_ratio],
         "cumulative_variance": [_safe(v) for v in cumulative],

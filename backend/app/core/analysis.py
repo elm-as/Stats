@@ -242,7 +242,7 @@ def _compare_means(df: pd.DataFrame, group_col: str, value_col: str) -> dict:
         "test": test_name,
         "statistic": _sf(stat),
         "p_value": _sf(p_value),
-        "significant": p_value < 0.05,
+        "significant": bool(p_value < 0.05),
         "normality_assumed": all_normal,
         "effect_size": effect_size,
         "interpretation": _interpret_p_value(p_value, test_name),
@@ -271,7 +271,7 @@ def _test_correlation(df: pd.DataFrame, col1: str, col2: str) -> dict:
         "test": test_name,
         "coefficient": _sf(r),
         "p_value": _sf(p_value),
-        "significant": p_value < 0.05,
+        "significant": bool(p_value < 0.05),
         "strength": _correlation_strength(r),
         "effect_size": {"r": _sf(r), "interpretation": _correlation_strength(r)},
     }
@@ -302,7 +302,7 @@ def _test_independence(df: pd.DataFrame, col1: str, col2: str) -> dict:
         "statistic": _sf(chi2),
         "p_value": _sf(p_value),
         "degrees_of_freedom": int(dof),
-        "significant": p_value < 0.05,
+        "significant": bool(p_value < 0.05),
         "min_expected_frequency": _sf(min_expected),
         "effect_size": {"cramers_v": _sf(cramers_v), "interpretation": _interpret_cramers_v(cramers_v)},
     }

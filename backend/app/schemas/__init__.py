@@ -31,7 +31,7 @@ class ColumnTypeSchema(Schema):
 
 class HypothesisTestSchema(Schema):
     test_type = fields.String(required=True, validate=validate.OneOf([
-        "means_comparison", "correlation", "independence",
+        "compare_means", "correlation", "independence",
     ]))
     group_col = fields.String(load_default=None)
     value_col = fields.String(load_default=None)
