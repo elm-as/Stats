@@ -51,6 +51,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     };
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const isLocalMode = !supabaseUrl || supabaseUrl === 'https://votre-projet.supabase.co' || import.meta.env.VITE_LOCAL_DEV_MODE === 'true';
+
+    if (isLocalMode) {
+      console.warn("⚠️ Mode local/démo activé : authentification Supabase contournée.");
+      const mockSession = {
+        access_token: 'local-demo-token',
+        refresh_token: 'local-demo-refresh',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        token_type: 'bearer',
+        user: {
+          id: 'dev-admin',
+          app_metadata: {},
+          user_metadata: { display_name: 'Admin Local' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          email: 'admin@openstats.local',
+        }
+      } as any;
+      handleSession(mockSession);
+      return;
+    }
+
     // Obtenir la session actuelle
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleSession(session);

@@ -87,9 +87,9 @@ def login_required(f):
             if auth_header.startswith("Bearer "):
                 token = auth_header.split(" ")[1]
 
-        # Support Local Dev Mode — UNIQUEMENT en développement local.
+        # Support Local Dev Mode — Actif par défaut sauf en production
         is_prod = os.getenv("FLASK_ENV") == "production"
-        dev_mode = os.getenv("LOCAL_DEV_MODE", "false").lower() == "true"
+        dev_mode = os.getenv("LOCAL_DEV_MODE", "true").lower() == "true"
         if not is_prod and dev_mode:
             try:
                 from app.extensions import db

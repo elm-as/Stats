@@ -96,7 +96,6 @@ flask run
 # Frontend (dans un autre terminal)
 npm run dev
 ```
-*(N'oubliez pas de configurer vos variables d'environnement pour Supabase et l'IA dans un fichier `.env`)*
 
 ---
 
