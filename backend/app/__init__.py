@@ -2,9 +2,10 @@ import os
 import logging
 import uuid
 import time
-from flask import Flask, send_from_directory, request, g
+from flask import Flask, send_from_directory, request, g, jsonify
 from flask_cors import CORS
 from sqlalchemy import inspect, text
+from werkzeug.exceptions import HTTPException
 
 from app.config import Config
 from app.extensions import db, migrate, limiter
@@ -177,6 +178,21 @@ def create_app(config_class=Config):
     # Register API blueprints
     from app.api.v1 import api_v1_bp
     app.register_blueprint(api_v1_bp, url_prefix="/api/v1")
+
+    # Toujours renvoyer du JSON sur /api/* même en cas d'exception non gérée,
+    # sinon le frontend reçoit une page HTML et RTK Query plante en "PARSING_ERROR".
+    @app.errorhandler(Exception)
+    def _handle_unexpected_error(err):  # type: ignore[override]
+        if isinstance(err, HTTPException):
+            return err
+        if request.path.startswith("/api/"):
+            app.logger.exception("Unhandled API error on %s %s", request.method, request.path)
+            return jsonify({
+                "error": "Erreur interne du serveur",
+                "request_id": getattr(g, "request_id", None),
+            }), 500
+        # Pour les routes frontend, conserver le comportement standard (page HTML 500)
+        raise err
 
     @app.route("/health")
     def health():

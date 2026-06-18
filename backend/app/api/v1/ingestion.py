@@ -24,59 +24,63 @@ def _allowed_file(filename: str) -> bool:
 @login_required
 def upload_dataset():
     """Upload un fichier et retourne le profilage."""
-    if "file" not in request.files:
-        return jsonify({"error": "Aucun fichier envoyé"}), 400
-
-    user_id = g.current_user.id
-
-    # Vérification des quotas (utile en mode multi-user / SaaS).
-    # En mode open-source (sans auth), on reste volontairement simple.
-    if current_app.config.get("AUTH_ENABLED", False):
-        MAX_DATASETS_PER_USER = 10
-        MAX_STORAGE_PER_USER_MB = 100
-
-        user_datasets = Dataset.query.filter_by(uploaded_by=user_id).all()
-
-        if len(user_datasets) >= MAX_DATASETS_PER_USER:
-            return jsonify({"error": f"Quota atteint : maximum {MAX_DATASETS_PER_USER} datasets autorisés."}), 403
-
-        total_size_mb = sum((ds.file_size or 0) for ds in user_datasets) / (1024 * 1024)
-
-        # La taille du fichier uploadé est comptée dans le quota.
-        file = request.files["file"]
-        file.seek(0, os.SEEK_END)
-        file_length = file.tell()
-        file.seek(0)
-
-        if total_size_mb + (file_length / (1024 * 1024)) > MAX_STORAGE_PER_USER_MB:
-            return jsonify({"error": f"Quota de stockage atteint : maximum {MAX_STORAGE_PER_USER_MB} Mo autorisés."}), 403
-
-    file = request.files["file"]
-    if file.filename == "" or not _allowed_file(file.filename):
-        return jsonify({"error": "Fichier invalide ou format non supporté"}), 400
-
-    filename = secure_filename(file.filename)
-    upload_dir = current_app.config["UPLOAD_FOLDER"]
-    os.makedirs(upload_dir, exist_ok=True)
-    filepath = os.path.join(upload_dir, filename)
-    file.save(filepath)
-
-    if not validate_file_magic(filepath, current_app.config["ALLOWED_EXTENSIONS"]):
-        os.remove(filepath)
-        return jsonify({"error": "Type de fichier invalide : le contenu ne correspond pas à l'extension"}), 400
-
     try:
-        name = request.form.get("name", filename)
-        dataset_id = dataset_manager.ingest(filepath, name=name, uploaded_by=user_id)
-        ds = dataset_manager.get(dataset_id)
+        if "file" not in request.files:
+            return jsonify({"error": "Aucun fichier envoyé"}), 400
 
-        return jsonify({
-            "dataset_id": dataset_id,
-            "name": ds["name"],
-            "profile": ds["profile"],
-        }), 201
+        user_id = g.current_user.id
+
+        # Vérification des quotas (utile en mode multi-user / SaaS).
+        # En mode open-source (sans auth), on reste volontairement simple.
+        if current_app.config.get("AUTH_ENABLED", False):
+            MAX_DATASETS_PER_USER = 10
+            MAX_STORAGE_PER_USER_MB = 100
+
+            user_datasets = Dataset.query.filter_by(uploaded_by=user_id).all()
+
+            if len(user_datasets) >= MAX_DATASETS_PER_USER:
+                return jsonify({"error": f"Quota atteint : maximum {MAX_DATASETS_PER_USER} datasets autorisés."}), 403
+
+            total_size_mb = sum((ds.file_size or 0) for ds in user_datasets) / (1024 * 1024)
+
+            # La taille du fichier uploadé est comptée dans le quota.
+            file = request.files["file"]
+            file.seek(0, os.SEEK_END)
+            file_length = file.tell()
+            file.seek(0)
+
+            if total_size_mb + (file_length / (1024 * 1024)) > MAX_STORAGE_PER_USER_MB:
+                return jsonify({"error": f"Quota de stockage atteint : maximum {MAX_STORAGE_PER_USER_MB} Mo autorisés."}), 403
+
+        file = request.files["file"]
+        if file.filename == "" or not _allowed_file(file.filename):
+            return jsonify({"error": "Fichier invalide ou format non supporté"}), 400
+
+        filename = secure_filename(file.filename)
+        upload_dir = current_app.config["UPLOAD_FOLDER"]
+        os.makedirs(upload_dir, exist_ok=True)
+        filepath = os.path.join(upload_dir, filename)
+        file.save(filepath)
+
+        if not validate_file_magic(filepath, current_app.config["ALLOWED_EXTENSIONS"]):
+            os.remove(filepath)
+            return jsonify({"error": "Type de fichier invalide : le contenu ne correspond pas à l'extension"}), 400
+
+        try:
+            name = request.form.get("name", filename)
+            dataset_id = dataset_manager.ingest(filepath, name=name, uploaded_by=user_id)
+            ds = dataset_manager.get(dataset_id)
+
+            return jsonify({
+                "dataset_id": dataset_id,
+                "name": ds["name"],
+                "profile": ds["profile"],
+            }), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 422
     except Exception as e:
-        return jsonify({"error": str(e)}), 422
+        current_app.logger.exception("Erreur upload_dataset: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
 @api_v1_bp.route("/datasets", methods=["GET"])
