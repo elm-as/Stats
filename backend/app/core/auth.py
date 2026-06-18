@@ -52,12 +52,15 @@ def decode_token(token: str) -> dict:
 def _get_dev_user():
     from app.extensions import db
 
-    user = db.session.get(User, "dev-admin") or db.session.query(User).first()
+    # IMPORTANT: User.id est VARCHAR(8). Garder un ID <= 8 caractères.
+    dev_user_id = "devadmin"
+
+    user = db.session.get(User, dev_user_id) or db.session.query(User).first()
     if user:
         return user
 
     user = User(
-        id="dev-admin",
+        id=dev_user_id,
         email="admin@openstats.local",
         display_name="Administrateur Dev",
         role="admin",

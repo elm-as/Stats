@@ -56,7 +56,8 @@ def _seed_dev_admin(app: Flask):
     from app.core.auth import hash_password
 
     admin_email = "admin@labs.elmas.fr"
-    admin_id = "dev-admin"
+    # IMPORTANT: User.id est VARCHAR(8). Garder un ID <= 8 caractères.
+    admin_id = "devadmin"
     admin_password = os.getenv("LOCAL_DEV_ADMIN_PASSWORD", "admin123")
 
     existing = db.session.query(User).filter_by(id=admin_id).first()
