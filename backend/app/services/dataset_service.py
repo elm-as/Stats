@@ -18,6 +18,7 @@ import pandas as pd
 
 from app.config import Config
 from app.extensions import db
+from flask import current_app, g
 from sqlalchemy.orm.attributes import flag_modified
 from app.models.dataset import Dataset, DatasetVersion
 from app.models.analysis import AnalysisResult
@@ -142,6 +143,14 @@ class DatasetManager:
         ds = db.session.get(Dataset, dataset_id)
         if ds is None:
             return None
+        # Mode "anonyme" : isolation par uploaded_by (user_id courant)
+        try:
+            if not current_app.config.get("AUTH_ENABLED", False):
+                uid = getattr(getattr(g, "current_user", None), "id", None)
+                if uid and ds.uploaded_by and ds.uploaded_by != uid:
+                    return None
+        except Exception:
+            pass
 
         cache = self._get_cache(dataset_id)
         return {
@@ -165,12 +174,29 @@ class DatasetManager:
 
     def get_dataset_model(self, dataset_id: str) -> Dataset | None:
         """Retourne le modèle ORM directement."""
-        return db.session.get(Dataset, dataset_id)
+        ds = db.session.get(Dataset, dataset_id)
+        if ds is None:
+            return None
+        try:
+            if not current_app.config.get("AUTH_ENABLED", False):
+                uid = getattr(getattr(g, "current_user", None), "id", None)
+                if uid and ds.uploaded_by and ds.uploaded_by != uid:
+                    return None
+        except Exception:
+            pass
+        return ds
 
     def get_df(self, dataset_id: str, cleaned: bool = True, respect_exclusions: bool = True) -> pd.DataFrame | None:
         ds = db.session.get(Dataset, dataset_id)
         if ds is None:
             return None
+        try:
+            if not current_app.config.get("AUTH_ENABLED", False):
+                uid = getattr(getattr(g, "current_user", None), "id", None)
+                if uid and ds.uploaded_by and ds.uploaded_by != uid:
+                    return None
+        except Exception:
+            pass
 
         # cleaned = dernière version, raw = version 1
         if cleaned:
@@ -214,7 +240,16 @@ class DatasetManager:
         return ds.excluded_columns or []
 
     def list_datasets(self, page: int = 1, per_page: int = 20) -> dict:
-        datasets = Dataset.query.order_by(Dataset.created_at.desc())
+        datasets = Dataset.query
+        # Mode "anonyme" : ne lister que les datasets du user courant
+        try:
+            if not current_app.config.get("AUTH_ENABLED", False):
+                uid = getattr(getattr(g, "current_user", None), "id", None)
+                if uid:
+                    datasets = datasets.filter_by(uploaded_by=uid)
+        except Exception:
+            pass
+        datasets = datasets.order_by(Dataset.created_at.desc())
         total = datasets.count()
         items = datasets.offset((page - 1) * per_page).limit(per_page).all()
         return {
@@ -230,6 +265,13 @@ class DatasetManager:
         ds = db.session.get(Dataset, dataset_id)
         if ds is None:
             raise ValueError(f"Dataset {dataset_id} introuvable")
+        try:
+            if not current_app.config.get("AUTH_ENABLED", False):
+                uid = getattr(getattr(g, "current_user", None), "id", None)
+                if uid and ds.uploaded_by and ds.uploaded_by != uid:
+                    raise ValueError(f"Dataset {dataset_id} introuvable")
+        except Exception:
+            pass
 
         dataset_name = ds.name
         storage.delete_dataset(dataset_id)

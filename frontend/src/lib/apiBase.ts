@@ -12,3 +12,16 @@ export function getApiOrigin(): string {
 
 export const API_V1_BASE = `${getApiOrigin()}/api/v1`;
 
+/**
+ * Identifiant anonyme (par navigateur) pour isoler les données sans authentification.
+ * Doit rester stable (localStorage) et court (8 caractères) car certains IDs en DB sont VARCHAR(8).
+ */
+export function getAnonymousClientId(): string {
+  const key = 'openstats_anon_id';
+  const existing = localStorage.getItem(key);
+  if (existing && /^[a-z0-9]{8}$/i.test(existing)) return existing.toLowerCase();
+  // 8 chars base36
+  const id = Math.random().toString(36).slice(2, 10).padEnd(8, '0').slice(0, 8).toLowerCase();
+  localStorage.setItem(key, id);
+  return id;
+}

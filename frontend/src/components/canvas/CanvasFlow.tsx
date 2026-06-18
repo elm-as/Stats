@@ -17,7 +17,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Play, Loader2, CheckCircle2, XCircle, AlertCircle, Share2, Copy } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { API_V1_BASE } from '../../lib/apiBase';
+import { API_V1_BASE, getAnonymousClientId } from '../../lib/apiBase';
 
 import Sidebar from './Sidebar';
 import TemplateSelector from './TemplateSelector';
@@ -359,6 +359,7 @@ function DnDFlow() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Client-Id': (() => { try { return getAnonymousClientId(); } catch { return ''; } })(),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(pipeline),
@@ -424,7 +425,10 @@ function DnDFlow() {
     try {
       const response = await fetch(`${API_V1_BASE}/canvas/share`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Id': (() => { try { return getAnonymousClientId(); } catch { return ''; } })(),
+        },
         body: JSON.stringify(pipeline),
       });
       const result = await response.json();

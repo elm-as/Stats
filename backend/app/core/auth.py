@@ -52,8 +52,16 @@ def decode_token(token: str) -> dict:
 def _get_dev_user():
     from app.extensions import db
 
-    # IMPORTANT: User.id est VARCHAR(8). Garder un ID <= 8 caractères.
+    # Mode "anonyme" : si le frontend envoie un identifiant stable par navigateur,
+    # on l'utilise comme user_id pour isoler les datasets entre visiteurs.
+    # IMPORTANT: User.id est VARCHAR(8) (et Dataset.uploaded_by aussi), donc 8 chars max.
     dev_user_id = "devadmin"
+    try:
+        client_id = (request.headers.get("X-Client-Id") or "").strip().lower()
+        if client_id and len(client_id) <= 8 and client_id.isalnum():
+            dev_user_id = client_id
+    except Exception:
+        pass
 
     user = db.session.get(User, dev_user_id) or db.session.query(User).first()
     if user:
@@ -61,8 +69,8 @@ def _get_dev_user():
 
     user = User(
         id=dev_user_id,
-        email="admin@openstats.local",
-        display_name="Administrateur Dev",
+        email=f"anon+{dev_user_id}@openstats.local",
+        display_name=f"Visiteur {dev_user_id}",
         role="admin",
     )
     db.session.add(user)

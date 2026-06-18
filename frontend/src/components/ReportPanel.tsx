@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGenerateReportMutation } from '../store/api';
 import { useAppSelector } from '../hooks';
 import { FileText, Download, Building2, FileSpreadsheet, Code, Globe, Sparkles, Presentation as PresentationIcon, FileType, Wand2, BookOpen, AlertCircle } from 'lucide-react';
-import { API_V1_BASE } from '../lib/apiBase';
+import { API_V1_BASE, getAnonymousClientId } from '../lib/apiBase';
 
 interface Props {
   datasetId: string;
@@ -25,6 +25,8 @@ export default function ReportPanel({ datasetId }: Props) {
     setProLoading(fmt);
     try {
       const headers: HeadersInit = {};
+      // Mode anonyme (isolation par navigateur)
+      try { headers['X-Client-Id'] = getAnonymousClientId(); } catch {}
       if (authEnabled && accessToken) headers.Authorization = `Bearer ${accessToken}`;
       const response = await fetch(`${API_V1_BASE}/datasets/${datasetId}/report/professional/${fmt}`, {
         method: 'POST',
@@ -100,6 +102,8 @@ export default function ReportPanel({ datasetId }: Props) {
     setExporting(fmt);
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      // Mode anonyme (isolation par navigateur)
+      try { headers['X-Client-Id'] = getAnonymousClientId(); } catch {}
       if (authEnabled && accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }

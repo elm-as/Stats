@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
-import { API_V1_BASE } from '../lib/apiBase';
+import { API_V1_BASE, getAnonymousClientId } from '../lib/apiBase';
 import type {
   DatasetSummary, DatasetDetail, PreviewData,
   CleaningResult, DescriptiveStats, CorrelationResult,
@@ -25,6 +25,13 @@ export const api = createApi({
     baseUrl: API_V1_BASE,
     prepareHeaders: (headers, { getState }) => {
       const authEnabled = import.meta.env.VITE_AUTH_ENABLED === 'true';
+      // Mode "anonyme" : isoler par navigateur via un identifiant stable.
+      // On l'envoie aussi en mode auth (inutile mais inoffensif).
+      try {
+        headers.set('X-Client-Id', getAnonymousClientId());
+      } catch {
+        // ignore (SSR / accès storage)
+      }
       if (authEnabled) {
         const token = (getState() as RootState).auth.accessToken;
         if (token) {
