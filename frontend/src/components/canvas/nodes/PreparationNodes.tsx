@@ -48,14 +48,20 @@ export function TypingNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
   const activeCount = columns.length - excludedColumns.length;
 
   return (
-    <NodeShell id={id} data={data} color="#6366f1" icon={Type} title="Détection de types" hasInput badge={dsId ? 'Connecté' : 'Auto'}>
+    <NodeShell id={id} data={data} color="#6366f1" icon={Type} title="Detection de types" hasInput badge={dsId ? 'Connecte' : 'Auto'}>
       <div className="text-surface-400 text-[11px] leading-relaxed">
-        Détecte et corrige automatiquement les types statistiques des colonnes.
+        Detecte et corrige automatiquement les types statistiques des colonnes.
       </div>
 
       {dsId && columns.length > 0 && (
         <div className="mt-2 text-[10px] text-indigo-300/80 bg-indigo-500/10 p-2 rounded-lg border border-indigo-500/15">
           {activeCount}/{columns.length} colonnes actives — {Object.keys(typeOverrides).filter(k => typeOverrides[k] !== 'auto').length} override(s)
+        </div>
+      )}
+
+      {excludedColumns.length > 0 && (
+        <div className="mt-1 text-[9px] text-amber-400/80 bg-amber-500/10 p-2 rounded-lg border border-amber-500/15">
+          {excludedColumns.length} colonne(s) exclue(s) : {excludedColumns.join(', ')}
         </div>
       )}
 
@@ -82,19 +88,19 @@ export function TypingNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
               {!dsId ? (
                 <div className="text-xs text-amber-400 bg-amber-400/10 p-4 rounded-xl border border-amber-400/20 flex items-center gap-3">
                   <AlertTriangle size={16} className="shrink-0" />
-                  <span>Connectez ce bloc à une <strong>Source de données</strong> (via une arête) pour voir les colonnes disponibles.</span>
+                  <span>Connectez ce bloc a une <strong>Source de donnees</strong> (via une arete) pour voir les colonnes disponibles.</span>
                 </div>
               ) : !dataset ? (
                 <div className="flex items-center gap-3 text-xs text-surface-400 p-4">
                   <div className="w-4 h-4 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" />
-                  Chargement du schéma du dataset...
+                  Chargement du schema du dataset...
                 </div>
               ) : columns.length === 0 ? (
                 <div className="text-xs text-surface-400 p-4">Aucun dictionnaire disponible pour ce dataset.</div>
               ) : (
                 <>
                   <p className="text-xs text-surface-400 mb-1">
-                    Cliquez sur le toggle pour activer/désactiver une variable. Forcez un type si nécessaire.
+                    Cliquez sur le toggle pour activer/desactiver une variable. Forcez un type si necessaire.
                   </p>
                   <p className="text-[10px] text-surface-500 mb-3">
                     {activeCount} active(s) / {excludedColumns.length} exclue(s)
@@ -111,23 +117,20 @@ export function TypingNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
                           className={`rounded-lg border transition-colors ${isExcluded ? 'bg-surface-800/20 border-white/[0.02] opacity-50' : 'bg-surface-800/40 border-white/[0.04] hover:border-white/[0.08]'}`}
                           style={{ display: 'grid', gridTemplateColumns: '36px 1fr auto', alignItems: 'center', gap: 10, padding: '8px 10px' }}
                         >
-                          {/* Toggle */}
                           <button
                             onClick={() => handleToggleColumn(colName)}
                             className={`rounded-full relative transition-colors ${isExcluded ? 'bg-surface-700' : 'bg-emerald-500/70'}`}
-                            title={isExcluded ? 'Activer cette variable' : 'Désactiver cette variable'}
+                            title={isExcluded ? 'Activer cette variable' : 'Desactiver cette variable'}
                             style={{ width: 32, height: 18 }}
                           >
                             <div className={`absolute top-0.5 rounded-full bg-white shadow transition-transform ${isExcluded ? 'left-0.5' : 'left-[15px]'}`} style={{ width: 14, height: 14 }} />
                           </button>
-                          {/* Name + detected type */}
                           <div style={{ overflow: 'hidden' }}>
                             <div className="text-xs font-bold text-surface-200" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {colName}
                             </div>
                             <div className="text-[9px] text-surface-500 mt-0.5">{detectedType}</div>
                           </div>
-                          {/* Type select */}
                           <select
                             value={overrideVal}
                             onChange={(e) => handleTypeChange(colName, e.target.value)}
@@ -159,63 +162,241 @@ export function TypingNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
   );
 }
 
+const CLEANING_ACTIONS = [
+  { key: 'drop_duplicates', label: 'Supprimer les doublons' },
+  { key: 'drop_high_missing', label: 'Supprimer colonnes &gt;50% null' },
+  { key: 'drop_near_constant', label: 'Supprimer quasi-constantes' },
+] as const;
+
+const NA_FILL_ACTIONS = [
+  { key: 'none', label: 'Ignorer les NaN' },
+  { key: 'drop_nulls', label: 'Supprimer lignes avec NaN' },
+  { key: 'fill_mean', label: 'Imputer par la moyenne' },
+  { key: 'fill_median', label: 'Imputer par la mediane' },
+  { key: 'fill_knn', label: 'Imputer KNN' },
+] as const;
+
 export function CleaningNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
   const handleChange = useNodeUpdate(id, data);
+  const mode = (data.mode as string) || 'auto';
+  const isAdvanced = mode === 'advanced';
+
+  const rawActions = (data.actions as string) || '';
+  const selectedActions = new Set(rawActions.split(',').map(s => s.trim()).filter(Boolean));
+
+  const toggleAction = (key: string) => {
+    const next = new Set(selectedActions);
+    if (next.has(key)) {
+      if (key === 'drop_nulls' && selectedActions.has('fill_mean')) next.delete('fill_mean');
+      if (key === 'drop_nulls' && selectedActions.has('fill_median')) next.delete('fill_median');
+      if (key === 'drop_nulls' && selectedActions.has('fill_knn')) next.delete('fill_knn');
+      next.delete(key);
+    } else {
+      if (key === 'drop_nulls' || key === 'fill_mean' || key === 'fill_median' || key === 'fill_knn') {
+        next.delete('drop_nulls');
+        next.delete('fill_mean');
+        next.delete('fill_median');
+        next.delete('fill_knn');
+      }
+      next.add(key);
+    }
+    if (data.onChange) {
+      data.onChange(id, 'actions', Array.from(next).join(','));
+    }
+  };
+
+  const naFillActive = NA_FILL_ACTIONS.filter(a => a.key !== 'none' && selectedActions.has(a.key))[0];
+  const hasNaNHandling = !!naFillActive;
+
   return (
     <NodeShell id={id} data={data} color="#f59e0b" icon={Eraser} title="Nettoyage" hasInput>
-      <div>
-        <NodeLabel>Stratégie</NodeLabel>
-        <NodeSelect name="action" value={(data.action as string) || 'auto'} onChange={handleChange}>
-          <option value="auto">Nettoyage automatique</option>
-          <optgroup label="Valeurs manquantes">
-            <option value="drop_nulls">Supprimer les lignes nulles</option>
-            <option value="fill_mean">Imputer par la moyenne</option>
-            <option value="fill_median">Imputer par la médiane</option>
-            <option value="fill_knn">Imputer KNN</option>
-          </optgroup>
-          <optgroup label="Doublons & colonnes">
-            <option value="drop_duplicates">Supprimer les doublons</option>
-            <option value="drop_high_missing">Supprimer colonnes &gt;50% null</option>
-            <option value="drop_near_constant">Supprimer quasi-constantes</option>
-          </optgroup>
-        </NodeSelect>
+      <div className="flex items-center justify-between">
+        <NodeLabel>Mode</NodeLabel>
+        <span className="text-[9px] text-surface-600">
+          {isAdvanced ? selectedActions.size + ' action(s)' : 'Auto'}
+        </span>
+      </div>
+
+      {!isAdvanced && (
+        <p className="text-surface-400 text-[11px] leading-relaxed">
+          Nettoyage automatique : doublons, colonnes &gt;50% null, quasi-constantes, imputation.
+        </p>
+      )}
+
+      {isAdvanced && (
+        <>
+          <div className="space-y-1.5">
+            <span className="text-[10px] text-surface-500 uppercase tracking-wider">Operations</span>
+            {CLEANING_ACTIONS.map((act) => (
+              <label key={act.key} className="flex items-center gap-2 cursor-pointer py-0.5">
+                <input
+                  type="checkbox"
+                  checked={selectedActions.has(act.key)}
+                  onChange={() => toggleAction(act.key)}
+                  className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-accent-500"
+                />
+                <span className="text-[11px] text-surface-300">{act.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="space-y-1.5 pt-1 border-t border-white/[0.06]">
+            <span className="text-[10px] text-surface-500 uppercase tracking-wider">Valeurs manquantes</span>
+            {NA_FILL_ACTIONS.map((act) => (
+              <label key={act.key} className={`flex items-center gap-2 cursor-pointer py-0.5 ${act.key === 'none' && hasNaNHandling ? 'opacity-50' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={act.key === 'none' ? !hasNaNHandling : selectedActions.has(act.key)}
+                  onChange={() => {
+                    if (act.key === 'none') {
+                      if (hasNaNHandling) return;
+                      if (data.onChange) {
+                        const next = new Set(selectedActions);
+                        ['drop_nulls', 'fill_mean', 'fill_median', 'fill_knn'].forEach(k => next.delete(k));
+                        data.onChange(id, 'actions', Array.from(next).join(','));
+                      }
+                      return;
+                    }
+                    toggleAction(act.key);
+                  }}
+                  className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-accent-500"
+                />
+                <span className="text-[11px] text-surface-300">{act.label}</span>
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="flex items-center justify-end">
+        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={isAdvanced}
+            onChange={(e) => {
+              if (data.onChange) {
+                data.onChange(id, 'mode', e.target.checked ? 'advanced' : 'auto');
+                if (e.target.checked) {
+                  data.onChange(id, 'actions', CLEANING_ACTIONS.map(a => a.key).join(',') + ',fill_mean');
+                }
+              }
+            }}
+          />
+          <div className={`w-8 h-4 rounded-full transition-colors ${isAdvanced ? 'bg-accent-500/60' : 'bg-white/10'}`}>
+            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isAdvanced ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+          </div>
+          <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider">
+            {isAdvanced ? 'Avance' : 'Auto'}
+          </span>
+        </label>
       </div>
     </NodeShell>
   );
 }
 
+const TRANSFORM_ACTIONS = [
+  { key: 'standardize', label: 'Standardisation (Z-score)', group: 'Normalisation' },
+  { key: 'normalize', label: 'Normalisation (Min-Max)', group: 'Normalisation' },
+  { key: 'log', label: 'Transformation Logarithmique', group: 'Asymetrie' },
+  { key: 'boxcox', label: 'Transformation Box-Cox', group: 'Asymetrie' },
+  { key: 'sqrt', label: 'Racine carree', group: 'Asymetrie' },
+  { key: 'winsorize', label: 'Winsorisation', group: 'Outliers' },
+  { key: 'clip_iqr', label: 'Clip IQR', group: 'Outliers' },
+  { key: 'diff', label: 'Differenciation (ordre 1)', group: 'Series temporelles' },
+  { key: 'diff2', label: 'Differenciation (ordre 2)', group: 'Series temporelles' },
+] as const;
+
+const TRANSFORM_GROUPS = ['Normalisation', 'Asymetrie', 'Outliers', 'Series temporelles'] as const;
+
 export function TransformNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
   const handleChange = useNodeUpdate(id, data);
   const { columns } = useConnectedColumns(id);
-  
+  const mode = (data.mode as string) || 'auto';
+  const isAdvanced = mode === 'advanced';
+
+  const rawActions = (data.actions as string) || '';
+  const selectedActions = new Set(rawActions.split(',').map(s => s.trim()).filter(Boolean));
+
+  const toggleAction = (key: string) => {
+    const next = new Set(selectedActions);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    if (data.onChange) {
+      data.onChange(id, 'actions', Array.from(next).join(','));
+    }
+  };
+
+  const selectedCount = selectedActions.size;
+
   return (
     <NodeShell id={id} data={data} color="#ec4899" icon={Wand2} title="Transformation" hasInput>
       <div>
-        <NodeLabel>Type</NodeLabel>
-        <NodeSelect name="action" value={(data.action as string) || 'auto_recommend'} onChange={handleChange}>
-          <option value="auto_recommend">Recommandations auto</option>
-          <optgroup label="Normalisation">
-            <option value="standardize">Standardisation (Z-score)</option>
-            <option value="normalize">Normalisation (Min-Max)</option>
-          </optgroup>
-          <optgroup label="Corrections d'asymétrie">
-            <option value="log">Transformation Logarithmique</option>
-            <option value="boxcox">Transformation Box-Cox</option>
-            <option value="sqrt">Racine carrée</option>
-          </optgroup>
-          <optgroup label="Séries temporelles">
-            <option value="diff">Différenciation (ordre 1)</option>
-            <option value="diff2">Différenciation (ordre 2)</option>
-          </optgroup>
-          <optgroup label="Outliers">
-            <option value="winsorize">Winsorisation</option>
-            <option value="clip_iqr">Clip IQR</option>
-          </optgroup>
-        </NodeSelect>
-      </div>
-      <div>
         <NodeLabel>Colonne(s) cible</NodeLabel>
         <NodeMultiColumnInput name="columns" placeholder="Toutes (auto)" value={(data.columns as string) || ''} onChange={handleChange} columns={columns} />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <NodeLabel>Operations</NodeLabel>
+        <span className="text-[9px] text-surface-600">
+          {isAdvanced ? selectedCount + ' selectionnee(s)' : 'Auto'}
+        </span>
+      </div>
+
+      {!isAdvanced && (
+        <p className="text-surface-400 text-[11px] leading-relaxed">
+          Recommandations automatiques selon le profil des colonnes selectionnees.
+        </p>
+      )}
+
+      {isAdvanced && (
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+          {TRANSFORM_GROUPS.map((group) => {
+            const groupActions = TRANSFORM_ACTIONS.filter(a => a.group === group);
+            return (
+              <div key={group}>
+                <span className="text-[9px] text-surface-600 uppercase tracking-wider font-semibold">{group}</span>
+                <div className="space-y-0.5 mt-1">
+                  {groupActions.map((act) => (
+                    <label key={act.key} className="flex items-center gap-2 cursor-pointer py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedActions.has(act.key)}
+                        onChange={() => toggleAction(act.key)}
+                        className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-pink-500"
+                      />
+                      <span className="text-[11px] text-surface-300">{act.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="flex items-center justify-end">
+        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={isAdvanced}
+            onChange={(e) => {
+              if (data.onChange) {
+                data.onChange(id, 'mode', e.target.checked ? 'advanced' : 'auto');
+              }
+            }}
+          />
+          <div className={`w-8 h-4 rounded-full transition-colors ${isAdvanced ? 'bg-accent-500/60' : 'bg-white/10'}`}>
+            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isAdvanced ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+          </div>
+          <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider">
+            {isAdvanced ? 'Avance' : 'Auto'}
+          </span>
+        </label>
       </div>
     </NodeShell>
   );
@@ -224,7 +405,7 @@ export function TransformNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
 export function ComputeVariableNode({ id, data }: NodeProps<Node<CanvasNodeData>>) {
   const handleChange = useNodeUpdate(id, data);
   return (
-    <NodeShell id={id} data={data} color="#a855f7" icon={Code2} title="Variable calculée" hasInput>
+    <NodeShell id={id} data={data} color="#a855f7" icon={Code2} title="Variable calculee" hasInput>
       <div>
         <NodeLabel>Nom de la colonne</NodeLabel>
         <NodeInput name="newColumn" placeholder="ex: ratio_prix" value={(data.newColumn as string) || ''} onChange={handleChange} />

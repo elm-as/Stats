@@ -7,12 +7,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const WorkflowPage = lazy(() => import('./pages/WorkflowPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const CanvasPage = lazy(() => import('./pages/CanvasPage'));
 const AnalyzerPage = lazy(() => import('./pages/AnalyzerPage'));
 const AnalyzerResultsPage = lazy(() => import('./pages/AnalyzerResultsPage'));
+const SharedCanvasPage = lazy(() => import('./pages/SharedCanvasPage'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
+const DocsPage = lazy(() => import('./pages/DocsPage'));
 
 function PageLoader() {
   return (
@@ -35,17 +36,27 @@ function PageLoader() {
 }
 
 export default function App() {
+  const authEnabled = import.meta.env.VITE_AUTH_ENABLED === 'true';
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Auth routes (publiques) */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* Auth routes (optionnelles) */}
+        {!authEnabled && (
+          <>
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/register" element={<Navigate to="/" replace />} />
+          </>
+        )}
+        
+        {/* Route publique de partage */}
+        <Route path="/share/:shareId" element={<SharedCanvasPage />} />
 
         {/* Routes protégées */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<ProfilePage />} />
+          <Route path="profile" element={<Navigate to="/settings" replace />} />
 
           {/* Workflow sans dataset → étape upload */}
           <Route path="workflow" element={<WorkflowPage />} />
@@ -57,7 +68,13 @@ export default function App() {
           {/* Canvas Intercatif */}
           <Route path="canvas" element={<CanvasPage />} />
 
-          {/* Workflow avec dataset → redirige vers /profile par défaut */}
+          {/* Marketplace */}
+          <Route path="marketplace" element={<MarketplacePage />} />
+
+          {/* Documentation */}
+          <Route path="docs" element={<DocsPage />} />
+
+          {/* Workflow avec dataset → redirige vers l'étape profilage */}
           <Route path="workflow/:datasetId" element={<Navigate to="profile" replace />} />
 
           {/* Étapes du workflow */}

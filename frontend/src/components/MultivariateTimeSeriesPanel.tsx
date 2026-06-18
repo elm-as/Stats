@@ -652,7 +652,7 @@ export default function MultivariateTimeSeriesPanel({
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-gray-900">{name.toUpperCase()}</span>
-                      {suit.recommended && <span className="text-xs text-green-700 font-bold">★ Recommandé</span>}
+                      {suit.recommended && <span className="text-xs text-green-700 font-bold">Recommandé</span>}
                       {!suit.suitable && <span className="text-xs text-red-600">Non adapté</span>}
                     </div>
                     <p className="text-xs text-gray-600">{suit.reason}</p>
@@ -705,7 +705,7 @@ export default function MultivariateTimeSeriesPanel({
                     <span className="font-medium text-gray-900">{col}</span>
                     <div className="flex items-center gap-3 text-sm">
                       <span className={st.is_stationary ? 'text-green-600' : 'text-amber-600'}>
-                        {st.is_stationary ? '✓ Stationnaire' : '✗ Non-stationnaire'}
+                        {st.is_stationary ? 'Stationnaire' : 'Non-stationnaire'}
                       </span>
                       <span className="text-gray-400 text-xs">{st.conclusion}</span>
                     </div>
@@ -906,7 +906,7 @@ export default function MultivariateTimeSeriesPanel({
                 }`}
               >
                 {key.toUpperCase()}
-                {model.error && <span className="ml-1">⚠</span>}
+                {model.error && <span className="ml-1">WARN</span>}
               </button>
             ))}
           </div>
@@ -990,7 +990,7 @@ export default function MultivariateTimeSeriesPanel({
                         <div className="text-xs"><span className="text-gray-500">F-stat:</span> <span className="font-mono font-bold">{currentModel.bounds_test.f_statistic?.toFixed(3)}</span></div>
                         <div className="text-xs"><span className="text-gray-500">p-value:</span> <span className="font-mono font-bold">{currentModel.bounds_test.p_value != null ? currentModel.bounds_test.p_value.toFixed(4) : 'n/a'}</span></div>
                         <div className={`text-xs font-bold ${currentModel.bounds_test.cointegration_detected ? 'text-green-700' : 'text-amber-700'}`}>
-                          {currentModel.bounds_test.cointegration_detected ? '✓ Cointégration détectée' : '✗ Pas de cointégration'}
+                          {currentModel.bounds_test.cointegration_detected ? 'Cointégration détectée' : 'Pas de cointégration'}
                         </div>
                       </div>
                       <p className="text-xs text-teal-700">{currentModel.bounds_test.conclusion}</p>
@@ -1140,7 +1140,7 @@ export default function MultivariateTimeSeriesPanel({
                 {/* Résumé Global */}
                 <div className={`p-4 border rounded-lg ${currentModel.diagnostics.summary.model_adequate ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <h5 className={`font-bold mb-2 ${currentModel.diagnostics.summary.model_adequate ? 'text-green-800' : 'text-red-800'}`}>
-                    Verdict Global: {currentModel.diagnostics.summary.model_adequate ? 'Modèle Adéquat ✅' : 'Modèle Inadéquat ❌'}
+                    Verdict Global: {currentModel.diagnostics.summary.model_adequate ? 'Modèle Adéquat' : 'Modèle Inadéquat'}
                   </h5>
                   <p className="text-sm text-gray-700 mb-3">{currentModel.diagnostics.summary.interpretation}</p>
                   

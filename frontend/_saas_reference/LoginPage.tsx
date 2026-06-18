@@ -1,34 +1,39 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import logoOS from '../assets/logoOS.png';
-import { supabase } from '../lib/supabaseClient';
+import { useLoginMutation } from '../store/api';
+import { useAppDispatch } from '../hooks';
+import { setCredentials } from '../store/slices/authSlice';
+import { extractErrorMessage } from '../components/ui/errorMessage';
+
+type LoginLocationState = {
+  from?: {
+    pathname?: string;
+  };
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+  const [login, { isLoading }] = useLoginMutation();
+
+  const from = (location.state as LoginLocationState | null)?.from?.pathname ?? '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) throw authError;
-
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Erreur de connexion');
-    } finally {
-      setIsLoading(false);
+      const credentials = await login({ email, password }).unwrap();
+      dispatch(setCredentials(credentials));
+      navigate(from, { replace: true });
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Erreur de connexion'));
     }
   };
 
@@ -42,7 +47,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <img src={logoOS} alt="OpenStats" className="w-16 h-16 object-contain mx-auto mb-4 drop-shadow-lg" />
           <h1 className="text-2xl font-bold text-surface-50">Connexion</h1>
-          <p className="text-surface-400 text-sm mt-1">Accédez à votre espace avec Supabase</p>
+          <p className="text-surface-400 text-sm mt-1">Accédez à votre espace OpenStats</p>
         </div>
 
         <form onSubmit={handleSubmit} className="glass rounded-2xl p-6 space-y-4">

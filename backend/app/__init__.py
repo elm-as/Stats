@@ -48,7 +48,7 @@ def _ensure_legacy_schema_compatibility(app: Flask):
 
 def _seed_dev_admin(app: Flask):
     """Cree l'utilisateur admin de dev si en mode LOCAL_DEV_MODE."""
-    if os.getenv("LOCAL_DEV_MODE", "true").lower() != "true":
+    if not app.config.get("LOCAL_DEV_MODE", False):
         return
 
     from app.models.user import User
@@ -56,7 +56,7 @@ def _seed_dev_admin(app: Flask):
 
     admin_email = "admin@labs.elmas.fr"
     admin_id = "dev-admin"
-    admin_password = "admin123"
+    admin_password = os.getenv("LOCAL_DEV_ADMIN_PASSWORD", "admin123")
 
     existing = db.session.query(User).filter_by(id=admin_id).first()
     if existing:
@@ -122,6 +122,9 @@ def create_app(config_class=Config):
     )
     app.config.from_object(config_class)
 
+    if app.config.get("LOCAL_DEV_MODE", False) and os.getenv("FLASK_ENV") == "production":
+        raise RuntimeError("LOCAL_DEV_MODE=true est interdit avec FLASK_ENV=production.")
+
     # CORS : origines configurables (par défaut, restreint au frontend local)
     allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
     CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
@@ -133,6 +136,11 @@ def create_app(config_class=Config):
     # Initialiser les extensions
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Flask-Limiter : désactivé par défaut en mode local (pas d'attaques à limiter).
+    # Réactiver quand AUTH_ENABLED=true pour le mode SaaS.
+    if not app.config.get("AUTH_ENABLED", False):
+        limiter.enabled = False
     limiter.init_app(app)
 
     # Logging structuré
@@ -142,8 +150,24 @@ def create_app(config_class=Config):
     with app.app_context():
         from app import models  # noqa: F401
         _ensure_legacy_schema_compatibility(app)
-        db.create_all()
+
+        is_sqlite = db.engine.dialect.name == "sqlite"
+        if is_sqlite and app.config.get("LOCAL_DEV_MODE", False):
+            db.create_all()
+            app.logger.info("SQLite local: tables créées via create_all()")
+        else:
+            from flask_migrate import upgrade as _migrate_upgrade
+            try:
+                _migrate_upgrade()
+                app.logger.info("Migrations appliquées via flask db upgrade")
+            except Exception as exc:
+                app.logger.warning("flask db upgrade a échoué: %s. Fallback sur create_all().", exc)
+                db.create_all()
+
         _seed_dev_admin(app)
+
+        from app.services.marketplace_service import seed_marketplace
+        seed_marketplace()
 
         # Enregistrer les exécuteurs de jobs
         from app.tasks.executors import register_all_executors

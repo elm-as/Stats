@@ -54,6 +54,7 @@ def execute_recipe(
         "title": recipe.title,
         "problem_type": recipe.problem_type,
         "target": recipe.target,
+        "recipe": recipe,
         "steps": {},
     }
 

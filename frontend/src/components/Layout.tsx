@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Home, LogOut, User, ChevronDown, 
+  Home,
   Database, Activity, FileText, Settings, 
-  Menu, X, Bell, Search, Maximize2, Minimize2, Network, Sparkles
+  Menu, X, Maximize2, Minimize2, Network, Sparkles, Monitor, Store, Play,
+  Sun, Moon,
 } from 'lucide-react';
 import logoOS from '../assets/logoOS.png';
-import { useAppSelector, useAppDispatch } from '../hooks';
-import { logout } from '../store/slices/authSlice';
+import { useAppDispatch } from '../hooks';
 
 export default function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const user = useAppSelector((s) => s.auth.user);
-  const [showMenu, setShowMenu] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true;
     return window.innerWidth >= 1366;
@@ -29,6 +27,18 @@ export default function Layout() {
     localStorage.setItem('density', density);
   }, [density]);
 
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth < 1024) setIsSidebarOpen(false);
@@ -41,27 +51,21 @@ export default function Layout() {
   const isWorkflow = pathname.startsWith('/workflow');
   const isCanvas = pathname.startsWith('/canvas');
   const isAnalyzer = pathname.startsWith('/analyzer');
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
+  const isMarketplace = pathname.startsWith('/marketplace');
 
   const navItems = [
     { label: 'Dashboard', icon: Home, path: '/', active: isHome },
-    { label: 'Auto-Analyse IA', icon: Sparkles, path: '/analyzer', active: isAnalyzer },
-    { label: 'Analyses', icon: Activity, path: '/workflow', active: isWorkflow },
+    { label: 'Analyse Guidée', icon: Play, path: '/workflow', active: isWorkflow },
     { label: 'Canvas', icon: Network, path: '/canvas', active: isCanvas },
+    { label: 'Analyse Auto', icon: Sparkles, path: '/analyzer', active: isAnalyzer },
+    { label: 'Marketplace', icon: Store, path: '/marketplace', active: isMarketplace },
   ];
 
   return (
     <div className="min-h-screen bg-surface-950 text-surface-100 flex overflow-hidden">
-      {/* Background Decor */}
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="bg-mesh absolute inset-0 opacity-40" />
-        <div className="bg-hex absolute inset-0 opacity-30" />
-        <div className="glow-point top-[-100px] left-[-100px]" />
-        <div className="glow-point bottom-[-100px] right-[-100px] !bg-secondary-500/10" />
+        <div className="absolute inset-0 bg-surface-950" />
       </div>
 
       {/* Sidebar */}
@@ -78,9 +82,8 @@ export default function Layout() {
               {isSidebarOpen && (
                 <div className="animate-fade-in whitespace-nowrap">
                   <h1 className="text-sm font-black text-surface-50 tracking-tighter leading-none">
-                    OPEN<span className="text-accent-400">STATS</span>
+                    OpenStats
                   </h1>
-                  <p className="text-[8px] text-surface-500 tracking-[0.2em] uppercase font-bold mt-0.5">Data Systems</p>
                 </div>
               )}
             </Link>
@@ -95,7 +98,7 @@ export default function Layout() {
                 title={!isSidebarOpen ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group ${
                   item.active 
-                    ? 'bg-accent-500/15 text-accent-300 border border-accent-500/25 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)]' 
+                    ? 'bg-accent-500/15 text-accent-300 border border-accent-500/25' 
                     : 'text-default hover:text-strong hover:bg-white/5 border border-transparent'
                 }`}
               >
@@ -106,9 +109,9 @@ export default function Layout() {
 
             <div className="pt-5 pb-2">
               <div className={`px-3 mb-2 text-[9px] font-black text-surface-600 uppercase tracking-[0.3em] ${!isSidebarOpen && 'hidden'}`}>
-                Workspace
+                Local
               </div>
-              <Link to="/profile" title={!isSidebarOpen ? 'Paramètres' : undefined} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-surface-400 hover:text-surface-100 hover:bg-white/5 transition-all group">
+              <Link to="/settings" title={!isSidebarOpen ? 'Paramètres' : undefined} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-surface-400 hover:text-surface-100 hover:bg-white/5 transition-all group">
                 <Settings className="w-4 h-4 shrink-0 group-hover:rotate-45 transition-transform" />
                 {isSidebarOpen && <span className="text-[13px] font-semibold">Paramètres</span>}
               </Link>
@@ -139,10 +142,6 @@ export default function Layout() {
             >
               <Menu className="w-4 h-4" />
             </button>
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 w-48 lg:w-56 focus-within:border-accent-500/40 transition-colors">
-              <Search className="w-3.5 h-3.5 text-muted" />
-              <input type="text" placeholder="Rechercher…" className="!bg-transparent !border-0 !p-0 !py-0 text-xs focus:!ring-0 w-full placeholder:text-faint text-default" />
-            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -153,67 +152,31 @@ export default function Layout() {
             >
               {density === 'compact' ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
-            <button 
-              className="p-1.5 text-muted hover:text-accent-400 transition-colors rounded-lg hover:bg-white/5" 
+            <button
+              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+              className="p-1.5 text-muted hover:text-accent-400 transition-colors rounded-lg hover:bg-white/5"
+              title={theme === 'dark' ? 'Passer au theme clair' : 'Passer au theme sombre'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <Link
+              to="/docs"
+              className="p-1.5 text-muted hover:text-accent-400 transition-colors rounded-lg hover:bg-white/5"
               title="Documentation"
-              onClick={() => window.open('/docs', '_blank')}
             >
               <FileText className="w-4 h-4" />
-            </button>
+            </Link>
             <Link 
-              to="/profile" 
+              to="/settings" 
               className="p-1.5 text-muted hover:text-accent-400 transition-colors rounded-lg hover:bg-white/5" 
               title="Paramètres du logiciel"
             >
               <Settings className="w-4 h-4" />
             </Link>
-            <button className="relative p-1.5 text-muted hover:text-accent-400 transition-colors rounded-lg hover:bg-white/5" title="Notifications">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-accent-500 rounded-full border border-surface-950" />
-            </button>
-
-            {user && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="flex items-center gap-2 p-1 pr-2.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
-                >
-                  <div className="w-6 h-6 rounded-full bg-gradient-brand flex items-center justify-center font-bold text-[10px] text-surface-950 shadow-glow-sm">
-                    {user.display_name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-[11px] font-bold hidden sm:inline text-strong">{user.display_name}</span>
-                  <ChevronDown className={`w-3 h-3 text-muted transition-transform ${showMenu ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showMenu && (
-                  <div className="absolute right-0 top-full mt-3 w-64 card p-2 z-[100] animate-slide-up border-white/10">
-                    <div className="p-3 border-b border-white/5 mb-2">
-                      <p className="text-xs font-bold text-strong">{user.display_name}</p>
-                      <p className="text-[10px] text-muted">{user.email}</p>
-                      <div className="mt-2 flex gap-1">
-                        <span className="badge">{user.role}</span>
-                        <span className="badge badge-info">Pro</span>
-                      </div>
-                    </div>
-                    <Link
-                      to="/profile"
-                      onClick={() => setShowMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-default hover:text-strong hover:bg-white/5 rounded-lg transition-colors text-left"
-                    >
-                      <User className="w-4 h-4" />
-                      Profil & Compte
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Se déconnecter
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-semibold">Mode local</span>
+            </div>
           </div>
         </header>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGenerateReportMutation } from '../store/api';
 import { useAppSelector } from '../hooks';
-import { FileText, Download, Building2, FileSpreadsheet, Code, Globe, Sparkles, Presentation as PresentationIcon, FileType } from 'lucide-react';
+import { FileText, Download, Building2, FileSpreadsheet, Code, Globe, Sparkles, Presentation as PresentationIcon, FileType, Wand2, BookOpen, AlertCircle } from 'lucide-react';
 
 interface Props {
   datasetId: string;
@@ -12,6 +12,7 @@ type ExportFormat = 'pdf' | 'excel' | 'json' | 'html';
 export default function ReportPanel({ datasetId }: Props) {
   const [generateReport, { isLoading }] = useGenerateReportMutation();
   const accessToken = useAppSelector((state) => state.auth.accessToken);
+  const authEnabled = import.meta.env.VITE_AUTH_ENABLED === 'true';
   const [title, setTitle] = useState("Rapport d'Analyse");
   const [organization, setOrganization] = useState('');
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
@@ -23,7 +24,7 @@ export default function ReportPanel({ datasetId }: Props) {
     setProLoading(fmt);
     try {
       const headers: HeadersInit = {};
-      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      if (authEnabled && accessToken) headers.Authorization = `Bearer ${accessToken}`;
       const response = await fetch(`/api/v1/datasets/${datasetId}/report/professional/${fmt}`, {
         method: 'POST',
         headers,
@@ -98,7 +99,7 @@ export default function ReportPanel({ datasetId }: Props) {
     setExporting(fmt);
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (accessToken) {
+      if (authEnabled && accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }
 

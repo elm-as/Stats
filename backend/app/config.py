@@ -8,9 +8,20 @@ _REPO_DIR = os.path.dirname(_BASE_DIR)
 
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(32).hex())
+    _secret = os.getenv("SECRET_KEY")
+    _is_local_dev = os.getenv("LOCAL_DEV_MODE", "false").lower() == "true"
+    if not _secret:
+        if _is_local_dev:
+            _secret = os.urandom(32).hex()
+        else:
+            raise RuntimeError("SECRET_KEY must be set in production (non LOCAL_DEV_MODE)")
+    SECRET_KEY = _secret
+    # Mode open-source: pas d'authentification par défaut.
+    # Pour réactiver plus tard (SaaS), définir AUTH_ENABLED=true.
+    AUTH_ENABLED = os.getenv("AUTH_ENABLED", "false").lower() == "true"
+    LOCAL_DEV_MODE = _is_local_dev
     UPLOAD_FOLDER = os.path.abspath(os.getenv("UPLOAD_FOLDER", os.path.join(_BASE_DIR, "uploads")))
-    MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "50")) * 1024 * 1024  # 50 MB par défaut
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "200")) * 1024 * 1024  # 200 MB par défaut en local
     ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls", "json", "jsonl"}
     FRONTEND_DIST_DIR = os.path.abspath(os.getenv(
         "FRONTEND_DIST_DIR",
@@ -36,6 +47,7 @@ class Config:
     # Redis / Celery
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
     CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+    RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
 
     # Anthropic LLM
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")

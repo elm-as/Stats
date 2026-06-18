@@ -24,6 +24,16 @@ def _sanitize_for_json(obj, _depth=0):
     if isinstance(obj, (np.floating,)):
         v = float(obj)
         return None if (np.isnan(v) or np.isinf(v)) else v
+    import datetime as dt
+    if isinstance(obj, (dt.datetime, dt.date)):
+        return obj.isoformat()
+    if hasattr(obj, "to_dict"):
+        return _sanitize_for_json(obj.to_dict(), _depth + 1)
+    if hasattr(obj, "__dataclass_fields__"):
+        d = {}
+        for f in obj.__dataclass_fields__:
+            d[f] = getattr(obj, f)
+        return _sanitize_for_json(d, _depth + 1)
     if isinstance(obj, np.ndarray):
         return _sanitize_for_json(obj.tolist(), _depth + 1)
     if isinstance(obj, dict):

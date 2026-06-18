@@ -6,8 +6,11 @@ Gère le cycle de vie des datasets via PostgreSQL + fichiers Parquet.
 from __future__ import annotations
 
 import copy
+import functools
 import os
+import threading
 import time
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +35,32 @@ from app.core.timeseries import run_timeseries_analysis, run_multivariate_timese
 from app.core.explainability import compute_shap_values
 from app.core.reporting import generate_report
 
+# ── Cache LRU pour DataFrames (évite de re-lire les parquets) ──
+_DF_CACHE: OrderedDict[str, pd.DataFrame] = OrderedDict()
+_DF_CACHE_MAX = 8
+_DF_CACHE_LOCK = threading.Lock()
+
+
+def _cached_read_parquet(dataset_id: str, version: int) -> pd.DataFrame:
+    key = f"{dataset_id}:v{version}"
+    with _DF_CACHE_LOCK:
+        if key in _DF_CACHE:
+            _DF_CACHE.move_to_end(key)
+            return _DF_CACHE[key]
+    df = storage.load_dataframe(dataset_id, version)
+    with _DF_CACHE_LOCK:
+        if len(_DF_CACHE) >= _DF_CACHE_MAX:
+            _DF_CACHE.popitem(last=False)
+        _DF_CACHE[key] = df
+    return df
+
+
+def _invalidate_df_cache(dataset_id: str) -> None:
+    with _DF_CACHE_LOCK:
+        keys = [k for k in _DF_CACHE if k.startswith(f"{dataset_id}:")]
+        for k in keys:
+            del _DF_CACHE[k]
+
 
 class DatasetManager:
     """Gestionnaire de datasets avec persistance SQL + Parquet."""
@@ -41,11 +70,17 @@ class DatasetManager:
     # en JSON, on les garde en mémoire pour la session courante.
     def __init__(self):
         self._session_cache: dict[str, dict] = {}
+        self._cache_lock = threading.Lock()
 
     def _get_cache(self, dataset_id: str) -> dict:
-        if dataset_id not in self._session_cache:
-            self._session_cache[dataset_id] = {}
-        return self._session_cache[dataset_id]
+        with self._cache_lock:
+            if dataset_id not in self._session_cache:
+                self._session_cache[dataset_id] = {}
+            return self._session_cache[dataset_id]
+
+    def _invalidate_session_cache(self, dataset_id: str) -> None:
+        with self._cache_lock:
+            self._session_cache.pop(dataset_id, None)
 
     # ── Ingestion ──────────────────────────────────────────────
 
@@ -143,7 +178,7 @@ class DatasetManager:
         else:
             version = 1
 
-        df = storage.load_dataframe(dataset_id, version)
+        df = _cached_read_parquet(dataset_id, version)
 
         if respect_exclusions and ds.excluded_columns:
             cols_to_drop = [c for c in ds.excluded_columns if c in df.columns]
@@ -178,9 +213,17 @@ class DatasetManager:
             raise ValueError(f"Dataset {dataset_id} introuvable")
         return ds.excluded_columns or []
 
-    def list_datasets(self) -> list[dict]:
-        datasets = Dataset.query.order_by(Dataset.created_at.desc()).all()
-        return [ds.to_dict() for ds in datasets]
+    def list_datasets(self, page: int = 1, per_page: int = 20) -> dict:
+        datasets = Dataset.query.order_by(Dataset.created_at.desc())
+        total = datasets.count()
+        items = datasets.offset((page - 1) * per_page).limit(per_page).all()
+        return {
+            "datasets": [ds.to_dict() for ds in items],
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": max(1, (total + per_page - 1) // per_page),
+        }
 
     def delete_dataset(self, dataset_id: str) -> dict:
         """Supprime un dataset, ses metadonnees et ses fichiers associes."""
@@ -192,7 +235,8 @@ class DatasetManager:
         storage.delete_dataset(dataset_id)
 
         if dataset_id in self._session_cache:
-            del self._session_cache[dataset_id]
+            self._invalidate_session_cache(dataset_id)
+        _invalidate_df_cache(dataset_id)
 
         db.session.delete(ds)
         db.session.commit()
@@ -287,6 +331,7 @@ class DatasetManager:
         self._audit(dataset_id, "clean", {"pipeline": pipeline_config, "logs_count": len(logs)},
                      version_before=next_version - 1, version_after=next_version)
         db.session.commit()
+        _invalidate_df_cache(dataset_id)
 
         return {
             "shape_before": {"rows": df_raw.shape[0], "columns": df_raw.shape[1]},
@@ -555,7 +600,7 @@ class DatasetManager:
                     storage.save_dataframe(df, dataset_id, version)
                     # Rafraîchir le cache
                     if dataset_id in self._session_cache:
-                        del self._session_cache[dataset_id]
+                        self._invalidate_session_cache(dataset_id)
             except Exception:
                 pass
 
@@ -655,6 +700,7 @@ class DatasetManager:
         self._audit(dataset_id, "restore", {"restored_from": version_number},
                      version_before=next_version - 1, version_after=next_version)
         db.session.commit()
+        _invalidate_df_cache(dataset_id)
 
         return restored.to_dict()
 

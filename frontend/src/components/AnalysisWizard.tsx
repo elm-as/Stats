@@ -490,7 +490,7 @@ export default function AnalysisWizard({ datasetId }: Props) {
                                 : 'bg-gray-100 text-gray-400 line-through'
                             }`}
                           >
-                            {a.available ? '✓' : '✗'} {a.label.split('(')[0].split('—')[0].trim().slice(0, 25)}
+                            {a.available ? 'OK' : 'N/A'} {a.label.split('(')[0].split('—')[0].trim().slice(0, 25)}
                           </span>
                         ))}
                       </div>
@@ -1359,14 +1359,14 @@ function StationarityBadge({ summary, orders, cointegrationLikely, configCol }: 
 
   const META: Record<string, { bg: string; border: string; icon: string; title: string; rec: string }> = {
     all_stationary: {
-      bg: 'bg-emerald-50', border: 'border-emerald-200', icon: '✓',
+      bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'OK',
       title: 'Toutes les séries sont stationnaires I(0)',
       rec: 'VAR en niveaux recommandé. ARIMA avec d=0.',
     },
     all_nonstationary: {
       bg: cointegrationLikely ? 'bg-indigo-50' : 'bg-amber-50',
       border: cointegrationLikely ? 'border-indigo-200' : 'border-amber-200',
-      icon: cointegrationLikely ? '⊕' : '⚠',
+      icon: cointegrationLikely ? 'COI' : 'WARN',
       title: cointegrationLikely
         ? `${entries.length} séries I(1) — cointégration probable`
         : `Séries non-stationnaires I(1)`,
@@ -1418,13 +1418,13 @@ function StationarityBadge({ summary, orders, cointegrationLikely, configCol }: 
           {/* Focus on selected column */}
           {focusCol && focusCol.order > 0 && (
             <p className="text-xs text-amber-700 mt-1.5">
-              ⚡ <strong>{configCol}</strong> est non-stationnaire I({focusCol.order}) —{' '}
+              <strong>{configCol}</strong> est non-stationnaire I({focusCol.order}) —{' '}
               {focusCol.order === 1 ? 'ARIMA(d=1) sera utilisé automatiquement.' : `${focusCol.order} différenciations nécessaires.`}
             </p>
           )}
           {focusCol && focusCol.order === 0 && (
             <p className="text-xs text-emerald-700 mt-1.5">
-              ✓ <strong>{configCol}</strong> est stationnaire — ARIMA(d=0)/SARIMA applicable directement.
+              <strong>{configCol}</strong> est stationnaire — ARIMA(d=0)/SARIMA applicable directement.
             </p>
           )}
         </div>
@@ -1437,7 +1437,7 @@ function StationarityResults({ result }: { result: import('../store/api').Statio
   const fmt = (v: number | undefined) => v !== undefined ? v.toFixed(4) : '—';
   const verdictColor = result.is_stationary ? 'border-l-green-500 bg-green-50' : 'border-l-orange-500 bg-orange-50';
   const verdictText = result.is_stationary ? 'Série stationnaire' : 'Série non-stationnaire';
-  const verdictIcon = result.is_stationary ? '✓' : '⚠';
+  const verdictIcon = result.is_stationary ? 'OK' : 'WARN';
 
   const TestCard = ({ name, data, h0, h1 }: { name: string; data: any; h0: string; h1: string }) => {
     if (!data || data.error) return (

@@ -39,7 +39,9 @@ def test_ingest_creates_dataset(app, test_user, mock_storage, mock_ingest_file):
     assert len(ds.versions) == 2  # raw + cleaned
 
 def test_quota_limits(client, test_user, mock_storage, mock_ingest_file):
-    """Vérifie que le quota de 10 datasets maximum est respecté."""
+    """Vérifie que le quota de 10 datasets maximum est respecté (SaaS only)."""
+    if not os.getenv("AUTH_ENABLED", "").lower() == "true":
+        pytest.skip("Test quota SaaS — mode local sans limites par utilisateur")
     # Créer 10 datasets pour cet utilisateur
     for i in range(10):
         ds = Dataset(

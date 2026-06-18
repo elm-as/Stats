@@ -177,13 +177,13 @@ def run_hypothesis_test(
     result = {"test_type": test_type}
 
     if test_type == "compare_means" and group_col and value_col:
-        result = _compare_means(df, group_col, value_col)
+        result.update(_compare_means(df, group_col, value_col))
 
     elif test_type == "correlation" and col1 and col2:
-        result = _test_correlation(df, col1, col2)
+        result.update(_test_correlation(df, col1, col2))
 
     elif test_type == "independence" and col1 and col2:
-        result = _test_independence(df, col1, col2)
+        result.update(_test_independence(df, col1, col2))
 
     return result
 

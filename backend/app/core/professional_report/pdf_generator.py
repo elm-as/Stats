@@ -67,12 +67,12 @@ def _make_styles():
             "Small", parent=base["BodyText"], fontSize=9, textColor=GRAY_LIGHT,
         ),
         "cover_title": ParagraphStyle(
-            "CoverTitle", parent=base["Title"], fontSize=32, textColor=SECONDARY,
-            alignment=TA_CENTER, leading=40, fontName="Helvetica-Bold",
+            "CoverTitle", parent=base["Title"], fontSize=38, textColor=colors.white,
+            alignment=TA_LEFT, leading=46, fontName="Helvetica-Bold", leftIndent=2*cm,
         ),
         "cover_sub": ParagraphStyle(
-            "CoverSub", parent=base["Title"], fontSize=16, textColor=ACCENT,
-            alignment=TA_CENTER, leading=24, fontName="Helvetica",
+            "CoverSub", parent=base["Title"], fontSize=18, textColor=ACCENT,
+            alignment=TA_LEFT, leading=26, fontName="Helvetica", leftIndent=2*cm, spaceAfter=20,
         ),
         "cover_meta": ParagraphStyle(
             "CoverMeta", parent=base["BodyText"], fontSize=11, textColor=GRAY_LIGHT,
@@ -102,11 +102,13 @@ def _md_to_rl(text: str) -> str:
 
 def _cover(content: ReportContent, styles: dict) -> list:
     story = []
-    story.append(Spacer(1, 5 * cm))
+    # Espacement pour descendre dans le bloc de couleur
+    story.append(Spacer(1, 4 * cm))
     story.append(Paragraph(content.title, styles["cover_title"]))
-    story.append(Spacer(1, 0.6 * cm))
+    story.append(Spacer(1, 0.5 * cm))
     story.append(Paragraph(content.subtitle, styles["cover_sub"]))
-    story.append(Spacer(1, 3 * cm))
+    # Espace pour sortir du bloc de couleur
+    story.append(Spacer(1, 8 * cm))
 
     # Tableau métadonnées
     meta_rows = [
@@ -179,9 +181,9 @@ def _render_insight(ins: dict[str, Any], styles: dict) -> list:
     msg = _md_to_rl(ins.get("message", ""))
     sug = _md_to_rl(ins.get("suggestion") or "")
 
-    body = f'<b><font color="{color.hexval()}">▸ {title}</font></b><br/>{msg}'
+    body = f'<b><font color="{color.hexval()}">■ {title.upper()}</font></b><br/><br/>{msg}'
     if sug:
-        body += f'<br/><i><font color="#374151">→ Recommandation : {sug}</font></i>'
+        body += f'<br/><br/><b>💡 Action Stratégique Recommandée :</b> <font color="#374151">{sug}</font>'
 
     p = Paragraph(body, ParagraphStyle(
         "Ins", parent=styles["body"], fontSize=10, leading=14,
@@ -194,8 +196,9 @@ def _render_insight(ins: dict[str, Any], styles: dict) -> list:
             ("LEFTPADDING", (0, 0), (-1, -1), 10),
             ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f9fafb")),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
         ])),
         Spacer(1, 0.2 * cm),
     ]
@@ -238,12 +241,24 @@ def _header_footer(canvas, doc):
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(GRAY_LIGHT)
     # Footer
-    canvas.drawString(2 * cm, 1.2 * cm, "Rapport généré par OpenStats — Analyseur Automatique")
+    canvas.drawString(2 * cm, 1.2 * cm, "Rapport Analytique — OpenStats")
     canvas.drawRightString(19 * cm, 1.2 * cm, f"Page {doc.page}")
     # Top bar
     canvas.setStrokeColor(ACCENT)
     canvas.setLineWidth(2)
     canvas.line(2 * cm, 28 * cm, 19 * cm, 28 * cm)
+    canvas.restoreState()
+
+def _cover_bg(canvas, doc):
+    """Dessine le bloc de couleur massif sur la page de garde."""
+    canvas.saveState()
+    # Bloc bleu nuit
+    canvas.setFillColor(SECONDARY)
+    canvas.rect(0, doc.height + doc.bottomMargin - 12*cm, A4[0], 16*cm, stroke=0, fill=1)
+    
+    # Ligne d'accentuation cyan en bas du bloc
+    canvas.setFillColor(ACCENT)
+    canvas.rect(0, doc.height + doc.bottomMargin - 12*cm, A4[0], 0.2*cm, stroke=0, fill=1)
     canvas.restoreState()
 
 
@@ -279,10 +294,18 @@ def generate_pdf(content: ReportContent) -> bytes:
             story.append(Paragraph("• " + _md_to_rl(kf), styles["bullet"]))
         story.append(Spacer(1, 0.5 * cm))
 
+    # Outline / Plan
+    if content.sections:
+        story.append(Paragraph("Sommaire Analytique", styles["h2"]))
+        for idx, sec in enumerate(content.sections):
+            story.append(Paragraph(f"<b>{idx+1}.</b> {_md_to_rl(sec.title)}", styles["bullet"]))
+        story.append(Spacer(1, 0.5 * cm))
+
     # Sections
-    for section in content.sections:
+    for idx, section in enumerate(content.sections):
+        section.title = f"{idx+1}. {section.title}" # Prefix section titles with numbers
         story.extend(_render_section(section, styles))
 
-    doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
+    doc.build(story, onFirstPage=_cover_bg, onLaterPages=_header_footer)
     buf.seek(0)
     return buf.read()

@@ -1,6 +1,7 @@
 import jwt
 import os
 from datetime import datetime, timedelta, timezone
+import pytest
 
 def create_valid_token():
     payload = {
@@ -11,6 +12,12 @@ def create_valid_token():
         "exp": datetime.now(timezone.utc) + timedelta(minutes=60),
     }
     return jwt.encode(payload, os.getenv("SUPABASE_JWT_SECRET", "fake-supabase-jwt-secret-for-testing-only"), algorithm="HS256")
+
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("AUTH_ENABLED", "false").lower() != "true",
+    reason="Tests auth désactivés en mode open-source local",
+)
 
 def test_protected_route_without_token(client):
     """Vérifie qu'une route protégée rejette les accès sans token."""

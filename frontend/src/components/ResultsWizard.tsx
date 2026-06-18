@@ -902,7 +902,7 @@ function InsightsTab({ result }: { result?: InsightsResult }) {
                 <h4 className="text-sm font-medium text-surface-200">{insight.title}</h4>
                 <p className="text-sm text-surface-300 mt-1">{insight.message}</p>
                 {insight.suggestion && (
-                  <p className="text-xs text-surface-400 mt-2">💡 {insight.suggestion}</p>
+                  <p className="text-xs text-surface-400 mt-2">{insight.suggestion}</p>
                 )}
               </div>
             ))}
@@ -923,64 +923,70 @@ function ReportTab({ format, setFormat, onDownload, isGenerating, hasResults }: 
   hasResults: boolean;
 }) {
   return (
-    <div className="space-y-4">
-      <div className="bg-surface-800/50 rounded-xl border border-white/10 p-4">
-        <h3 className="text-lg font-semibold text-surface-50 mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-orange-400" />
-          Génération de rapport
-        </h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm text-surface-300 mb-2 block">Format du rapport</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFormat('pdf')}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                  format === 'pdf'
-                    ? 'bg-orange-500/20 border-orange-500/50 text-orange-300'
-                    : 'bg-white/5 border-white/10 text-surface-300 hover:bg-white/10'
-                }`}
-              >
-                PDF
-              </button>
-              <button
-                onClick={() => setFormat('docx')}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                  format === 'docx'
-                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                    : 'bg-white/5 border-white/10 text-surface-300 hover:bg-white/10'
-                }`}
-              >
-                Word (DOCX)
-              </button>
-            </div>
+    <div className="card overflow-hidden !p-0">
+      <div className="px-5 py-4 border-b border-white/10 bg-gradient-to-r from-orange-500/[0.08] to-red-500/[0.04]">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <div className="absolute inset-0 bg-orange-400/20 blur-lg rounded-full" />
+            <FileText className="w-5 h-5 text-orange-400 relative z-10" />
           </div>
-
-          <button
-            onClick={onDownload}
-            disabled={isGenerating || !hasResults}
-            className="w-full py-3 rounded-lg font-semibold text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                Génération en cours...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Télécharger le rapport {format.toUpperCase()}
-              </>
-            )}
-          </button>
-
-          {!hasResults && (
-            <p className="text-sm text-amber-300 text-center">
-              Exécutez d'abord le pipeline pour générer un rapport
-            </p>
-          )}
+          <h3 className="text-sm font-bold text-strong">Generation de rapport professionnel</h3>
         </div>
+        <p className="text-xs text-muted mt-1.5">
+          Telechargez un rapport complet au format PDF ou Word avec tous les resultats, graphiques et insights.
+        </p>
+      </div>
+
+      <div className="px-5 py-4 space-y-4">
+        <div>
+          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">Format de sortie</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFormat('pdf')}
+              className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                format === 'pdf'
+                  ? 'bg-orange-500/15 border-orange-500/40 text-orange-300 shadow-sm'
+                  : 'bg-white/5 border-white/10 text-muted hover:bg-white/10 hover:text-default'
+              }`}
+            >
+              PDF
+            </button>
+            <button
+              onClick={() => setFormat('docx')}
+              className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                format === 'docx'
+                  ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 shadow-sm'
+                  : 'bg-white/5 border-white/10 text-muted hover:bg-white/10 hover:text-default'
+              }`}
+            >
+              Word (DOCX)
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={onDownload}
+          disabled={isGenerating || !hasResults}
+          className="btn-primary w-full text-sm py-3"
+        >
+          {isGenerating ? (
+            <>
+              <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+              Generation en cours...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              Telecharger le rapport {format.toUpperCase()}
+            </>
+          )}
+        </button>
+
+        {!hasResults && (
+          <p className="text-xs text-amber-400 text-center">
+            Executez d'abord le pipeline pour generer un rapport
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { TrendingUp, ArrowLeft, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw } from 'lucide-react';
+﻿import { TrendingUp, ArrowLeft, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw } from 'lucide-react';
 import type { MultivariateTimeSeriesResults } from '../../types';
 import { IRFGrid } from '../viz';
 import { InfoCard } from './InfoCard';
@@ -345,7 +345,7 @@ export function PerModelExploration({
                   <div className="card border-blue-500/20">
                     <div className="flex items-start gap-2">
                       {/* eslint-disable-next-line jsx-a11y/aria-props */}
-                      <span className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" aria-role="img" aria-label="info">ℹ️</span>
+                      <span className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" aria-role="img" aria-label="info">Info</span>
                       <p className="text-sm text-blue-300">{res.recommendation}</p>
                     </div>
                   </div>

@@ -237,6 +237,23 @@ def _choose_temporal_column(df: pd.DataFrame, target_col: str, temporal_col: str
     return None
 
 
+def _sanitize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Supprime les caractères nuls (\x00) des colonnes, index et données string.
+    Corrige les problèmes d'encodage qui causent 'embedded null character'
+    lors de la sérialisation (pickle/multiprocessing)."""
+    # Nettoyer les noms de colonnes
+    df.columns = [c.replace('\x00', '') if isinstance(c, str) else c for c in df.columns]
+    # Nettoyer les colonnes string/object
+    for col in df.select_dtypes(include=['object']).columns:
+        try:
+            df[col] = df[col].astype(str).str.replace('\x00', '', regex=False)
+        except Exception:
+            pass
+    # Reset l'index pour garantir un index entier propre
+    df = df.reset_index(drop=True)
+    return df
+
+
 def prepare_data(
     df: pd.DataFrame,
     target_col: str,
@@ -246,7 +263,7 @@ def prepare_data(
     temporal_col: str | None = None,
 ) -> dict:
     """Prépare les données pour la modélisation : séparation train/test."""
-    working_df = df.copy()
+    working_df = _sanitize_dataframe(df.copy())
     y = working_df[target_col]
 
     # Ne garder que les colonnes numériques pour le MVP
@@ -369,7 +386,7 @@ def train_single_model(
         if pipe_params:
             scoring = "neg_mean_squared_error" if task_type == "regression" else "f1_weighted"
             grid = GridSearchCV(
-                pipe, pipe_params, cv=cv_folds, scoring=scoring, n_jobs=-1, error_score="raise"
+                pipe, pipe_params, cv=cv_folds, scoring=scoring, n_jobs=1, error_score="raise"
             )
             grid.fit(X_train, y_train)
             model = grid.best_estimator_
@@ -383,7 +400,7 @@ def train_single_model(
         if param_grid and any(isinstance(v, list) for v in param_grid.values()):
             scoring = "neg_mean_squared_error" if task_type == "regression" else "f1_weighted"
             grid = GridSearchCV(
-                model_cls(), param_grid, cv=cv_folds, scoring=scoring, n_jobs=-1, error_score="raise"
+                model_cls(), param_grid, cv=cv_folds, scoring=scoring, n_jobs=1, error_score="raise"
             )
             grid.fit(X_train, y_train)
             model = grid.best_estimator_
@@ -532,7 +549,11 @@ def _train_polynomial(data: dict, cv_folds: int) -> dict:
         "task_type": "regression",
         "best_params": {"degree": best_degree},
         "metrics": metrics,
-        "cv_scores": {"mean": round(float(best_score), 6)},
+        "cv_scores": {
+            "mean": round(float(best_score), 6),
+            "std": 0.0,
+            "scores": [round(float(best_score), 6)],
+        },
         "feature_importance": [],
         "model": best_model,
     }

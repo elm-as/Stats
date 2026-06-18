@@ -13,6 +13,43 @@ from pathlib import Path
 from typing import Optional
 
 
+MAGIC_BYTES: dict[str, list[bytes]] = {
+    "csv": [],
+    "xlsx": [b"\x50\x4B\x03\x04"],
+    "xls": [b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"],
+    "json": [],
+    "jsonl": [],
+}
+
+
+def validate_file_magic(filepath: str, allowed_extensions: set[str]) -> bool:
+    """Vérifie les magic bytes du fichier selon son extension."""
+    ext = Path(filepath).suffix.lstrip(".").lower()
+    if ext not in allowed_extensions:
+        return False
+
+    expected = MAGIC_BYTES.get(ext)
+    if expected is None:
+        return False
+
+    if not expected:
+        if ext in ("csv", "json", "jsonl"):
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                    sample = f.read(512)
+                if ext in ("json", "jsonl"):
+                    stripped = sample.strip()
+                    return stripped.startswith("{") or stripped.startswith("[")
+                return len(sample) > 0
+            except Exception:
+                return False
+        return True
+
+    with open(filepath, "rb") as f:
+        header = f.read(max(len(m) for m in expected))
+    return any(header.startswith(magic) for magic in expected)
+
+
 class BaseAdapter:
     """Interface commune pour tous les adaptateurs de format."""
 

@@ -1,56 +1,47 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { AuthUser } from '../../types';
+import { createSlice } from '@reduxjs/toolkit';
 
+/**
+ * Slice minimal en mode open-source local.
+ * Les champs "user" / "accessToken" / "activeWorkspaceId" sont conservés
+ * pour compatibilité avec l'UI existante (Layout, ProtectedRoute, etc.)
+ * mais sans logique de persistance ni auth réelle.
+ *
+ * Cf. ARCHITECTURE.md — réactiver AUTH_ENABLED=true pour réactiver l'auth SaaS.
+ */
 interface AuthState {
-  user: AuthUser | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-  activeWorkspaceId: string | null;
+  user: { id: string; email: string; display_name: string; role: string; is_active: boolean } | null;
+  accessToken: null;
+  refreshToken: null;
+  activeWorkspaceId: null;
 }
 
+const LOCAL_USER: NonNullable<AuthState['user']> = {
+  id: 'local',
+  email: 'local@openstats.app',
+  display_name: 'Utilisateur local',
+  role: 'analyst',
+  is_active: true,
+};
+
 const initialState: AuthState = {
-  user: JSON.parse(localStorage.getItem('auth_user') || 'null'),
-  accessToken: localStorage.getItem('access_token'),
-  refreshToken: localStorage.getItem('refresh_token'),
-  activeWorkspaceId: localStorage.getItem('active_workspace_id'),
+  user: LOCAL_USER,
+  accessToken: null,
+  refreshToken: null,
+  activeWorkspaceId: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials(state, action: PayloadAction<{ user: AuthUser; access_token: string; refresh_token: string }>) {
-      state.user = action.payload.user;
-      state.accessToken = action.payload.access_token;
-      state.refreshToken = action.payload.refresh_token;
-      localStorage.setItem('auth_user', JSON.stringify(action.payload.user));
-      localStorage.setItem('access_token', action.payload.access_token);
-      localStorage.setItem('refresh_token', action.payload.refresh_token);
-    },
-    updateAccessToken(state, action: PayloadAction<{ access_token: string; user: AuthUser }>) {
-      state.accessToken = action.payload.access_token;
-      state.user = action.payload.user;
-      localStorage.setItem('access_token', action.payload.access_token);
-      localStorage.setItem('auth_user', JSON.stringify(action.payload.user));
-    },
-    setActiveWorkspace(state, action: PayloadAction<string | null>) {
-      state.activeWorkspaceId = action.payload;
-      if (action.payload) {
-        localStorage.setItem('active_workspace_id', action.payload);
-      } else {
-        localStorage.removeItem('active_workspace_id');
-      }
-    },
-    logout(state) {
-      state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
-      state.activeWorkspaceId = null;
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('active_workspace_id');
-    },
+    /** Stub conservé pour compatibilité — aucun effet en mode local. */
+    setCredentials() {},
+    /** Stub conservé pour compatibilité — aucun effet en mode local. */
+    updateAccessToken() {},
+    /** Stub conservé pour compatibilité — aucun effet en mode local. */
+    setActiveWorkspace() {},
+    /** Stub conservé pour compatibilité — aucun effet en mode local. */
+    logout() {},
   },
 });
 

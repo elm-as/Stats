@@ -1,7 +1,5 @@
-import ReactPlotly from 'react-plotly.js';
-const Plot = (ReactPlotly as any).default || ReactPlotly;
+import React, { lazy, Suspense } from 'react';
 import type { Layout, Config, Data } from 'plotly.js';
-import { useMemo } from 'react';
 
 // ── Thème dark partagé pour tous les graphes scientifiques ──
 export const DARK_TEMPLATE: Partial<Layout> = {
@@ -67,6 +65,10 @@ export const SCI_COLORS = [
 export const COLORSCALE_VIRIDIS = 'Viridis';
 export const COLORSCALE_RDBU = 'RdBu';
 
+// ── PlotlyChart (lazy-load pour ne pas tirer 4.6 MB de Plotly au dashboard) ──
+
+const HeavyPlotlyChart = lazy(() => import('./PlotlyHeavy'));
+
 interface PlotlyChartProps {
   data: Data[];
   layout?: Partial<Layout>;
@@ -75,27 +77,25 @@ interface PlotlyChartProps {
   className?: string;
 }
 
-/** Wrapper Plotly avec thème dark uniforme. */
-export function PlotlyChart({ data, layout = {}, config = {}, height = 400, className = '' }: PlotlyChartProps) {
-  const merged = useMemo<Partial<Layout>>(() => ({
-    ...DARK_TEMPLATE,
-    ...layout,
-    xaxis: { ...DARK_TEMPLATE.xaxis, ...(layout.xaxis || {}) },
-    yaxis: { ...DARK_TEMPLATE.yaxis, ...(layout.yaxis || {}) },
-    autosize: true,
-  }), [layout]);
-
-  const mergedConfig = useMemo<Partial<Config>>(() => ({ ...DEFAULT_CONFIG, ...config }), [config]);
-
+function PlotlySkeleton({ height = 400, className = '' }: { height?: number | string; className?: string }) {
   return (
-    <div className={`w-full ${className}`} style={{ height }}>
-      <Plot
-        data={data}
-        layout={merged}
-        config={mergedConfig}
-        style={{ width: '100%', height: '100%' }}
-        useResizeHandler
-      />
+    <div
+      className={`w-full rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-center ${className}`}
+      style={{ height }}
+    >
+      <div className="flex flex-col items-center gap-2 text-surface-500">
+        <div className="w-5 h-5 border-2 border-surface-600 border-t-accent-400 rounded-full animate-spin" />
+        <span className="text-[10px] uppercase tracking-widest font-bold">Chargement…</span>
+      </div>
     </div>
+  );
+}
+
+/** Wrapper Plotly avec thème dark uniforme + lazy-load. */
+export function PlotlyChart({ data, layout = {}, config = {}, height = 400, className = '' }: PlotlyChartProps) {
+  return (
+    <Suspense fallback={<PlotlySkeleton height={height} className={className} />}>
+      <HeavyPlotlyChart data={data} layout={layout} config={config} height={height} className={className} />
+    </Suspense>
   );
 }

@@ -708,3 +708,36 @@ export interface WorkspaceMember {
 export interface WorkspaceDetail extends WorkspaceSummary {
   members: WorkspaceMember[];
 }
+
+// ── Marketplace ──
+
+export interface MarketplaceItemSummary {
+  id: string;
+  name: string;
+  description: string;
+  category: 'template' | 'extension';
+  item_type: string;
+  author: string;
+  version: string;
+  icon: string;
+  tags: string[];
+  featured: boolean;
+  downloads: number;
+}
+
+export interface MarketplaceItemDetail extends MarketplaceItemSummary {
+  payload: {
+    nodes?: Array<{
+      id: string;
+      type: string;
+      position: { x: number; y: number };
+      data: Record<string, unknown>;
+    }>;
+    edges?: Array<{
+      source: string;
+      target: string;
+    }>;
+    code?: string;
+    [key: string]: unknown;
+  };
+}

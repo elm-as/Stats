@@ -3,6 +3,11 @@ Registre et dispatcher d'exécution des nœuds Canvas.
 """
 
 import traceback
+import hashlib
+import json
+import redis
+from flask import current_app
+
 from .source import execute_dataset
 from .preparation import execute_typing, execute_cleaning, execute_transform, execute_compute_variable
 from .descriptive import execute_descriptive_numeric, execute_descriptive_categorical, execute_correlation, execute_vif
@@ -45,6 +50,18 @@ NODE_EXECUTORS = {
     "output": execute_output,
 }
 
+_redis_client = None
+
+def get_redis_client():
+    global _redis_client
+    if _redis_client is None:
+        try:
+            url = current_app.config.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+            _redis_client = redis.from_url(url)
+        except Exception:
+            pass
+    return _redis_client
+
 def execute_node(node_type, data, dataset_id):
     """
     Exécute un nœud Canvas et renvoie { status, result?, error?, message? }.
@@ -56,8 +73,34 @@ def execute_node(node_type, data, dataset_id):
     if node_type not in NODE_EXECUTORS:
         return {"status": "skipped", "message": f"Type de nœud '{node_type}' non supporté"}
 
+    # Ne pas cacher le noeud dataset
+    use_cache = node_type != "dataset"
+    cache_key = None
+    r = None
+    
+    if use_cache:
+        try:
+            r = get_redis_client()
+            if r:
+                data_hash = hashlib.md5(json.dumps(data, sort_keys=True).encode()).hexdigest()
+                cache_key = f"openstats:canvas:cache:{node_type}:{dataset_id}:{data_hash}"
+                cached = r.get(cache_key)
+                if cached:
+                    return json.loads(cached)
+        except Exception as e:
+            current_app.logger.warning(f"Redis cache error: {e}")
+
     try:
         executor = NODE_EXECUTORS[node_type]
-        return executor(data, dataset_id)
+        result = executor(data, dataset_id)
+        
+        # Mise en cache (TTL de 24h)
+        if use_cache and r and cache_key and result.get("status") == "success":
+            try:
+                r.setex(cache_key, 86400, json.dumps(result))
+            except Exception:
+                pass
+                
+        return result
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}

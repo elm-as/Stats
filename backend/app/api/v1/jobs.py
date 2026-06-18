@@ -11,18 +11,17 @@ from app.tasks import is_async_available
 @api_v1_bp.route("/jobs", methods=["GET"])
 def list_jobs_route():
     """
-    Liste les jobs avec filtres optionnels.
-    Query params : dataset_id, status, limit
+    Liste les jobs avec filtres optionnels et pagination.
+    Query params : dataset_id, status, page, per_page
     """
     dataset_id = request.args.get("dataset_id")
     status = request.args.get("status")
-    limit = request.args.get("limit", 50, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
 
-    jobs = list_jobs(dataset_id=dataset_id, status=status, limit=limit)
-    return jsonify({
-        "jobs": jobs,
-        "async_available": is_async_available(),
-    })
+    result = list_jobs(dataset_id=dataset_id, status=status, page=page, per_page=per_page)
+    result["async_available"] = is_async_available()
+    return jsonify(result)
 
 
 @api_v1_bp.route("/jobs/submit", methods=["POST"])

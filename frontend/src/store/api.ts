@@ -12,27 +12,38 @@ import type {
   FeatureRanges, PredictionResult,
   DatasetVersion, AnalysisHistoryEntry, AuditLogEntry,
   JobStatus,
-  AuthResponse, RefreshResponse,
-  WorkspaceSummary, WorkspaceDetail,
+  MarketplaceItemSummary, MarketplaceItemDetail,
 } from '../types';
+
+type PaginatedDatasets = { datasets: DatasetSummary[]; page: number; per_page: number; total: number; pages: number };
+type PaginatedJobs = { jobs: JobStatus[]; page: number; per_page: number; total: number; pages: number; async_available: boolean };
 
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
     baseUrl: `${import.meta.env.VITE_API_URL || ''}/api/v1`,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.accessToken;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+      const authEnabled = import.meta.env.VITE_AUTH_ENABLED === 'true';
+      if (authEnabled) {
+        const token = (getState() as RootState).auth.accessToken;
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
       }
       return headers;
     },
   }),
-  tagTypes: ['Dataset', 'Analysis', 'Model', 'Workspace', 'Insights', 'Diagnostics'],
+  tagTypes: ['Dataset', 'Analysis', 'Model', 'Insights', 'Diagnostics', 'Marketplace'],
   endpoints: (builder) => ({
     // ── Datasets ──
-    listDatasets: builder.query<DatasetSummary[], void>({
-      query: () => '/datasets',
+    listDatasets: builder.query<PaginatedDatasets, { page?: number; per_page?: number } | void>({
+      query: (params) => {
+        const p = new URLSearchParams();
+        if (params && 'page' in params && params.page) p.set('page', String(params.page));
+        if (params && 'per_page' in params && params.per_page) p.set('per_page', String(params.per_page));
+        const qs = p.toString();
+        return `/datasets${qs ? `?${qs}` : ''}`;
+      },
       providesTags: ['Dataset'],
     }),
 
@@ -461,7 +472,7 @@ export const api = createApi({
           result?: unknown; error?: string; reason?: string;
         }>;
       };
-    }, { id: string; target?: string; execute_optional?: boolean }>({
+    }, { id: string; target?: string; execute_optional?: boolean; exclude_columns?: string[] }>({
       query: ({ id, ...body }) => ({
         url: `/datasets/${id}/auto-pipeline/execute`,
         method: 'POST',
@@ -519,11 +530,13 @@ export const api = createApi({
     }),
 
     // ── Jobs ──
-    listJobs: builder.query<{ jobs: JobStatus[]; async_available: boolean }, { datasetId?: string; status?: string }>({
-      query: ({ datasetId, status } = {}) => {
+    listJobs: builder.query<PaginatedJobs, { datasetId?: string; status?: string; page?: number; per_page?: number }>({
+      query: ({ datasetId, status, page, per_page } = {}) => {
         const params = new URLSearchParams();
         if (datasetId) params.set('dataset_id', datasetId);
         if (status) params.set('status', status);
+        if (page) params.set('page', String(page));
+        if (per_page) params.set('per_page', String(per_page));
         return `/jobs?${params.toString()}`;
       },
     }),
@@ -662,96 +675,8 @@ export const api = createApi({
       }),
     }),
 
-    // ── Auth ──
-    register: builder.mutation<AuthResponse, { email: string; password: string; display_name: string }>({
-      query: (body) => ({
-        url: '/auth/register',
-        method: 'POST',
-        body,
-      }),
-    }),
-
-    login: builder.mutation<AuthResponse, { email: string; password: string }>({
-      query: (body) => ({
-        url: '/auth/login',
-        method: 'POST',
-        body,
-      }),
-    }),
-
-    refreshToken: builder.mutation<RefreshResponse, { refresh_token: string }>({
-      query: (body) => ({
-        url: '/auth/refresh',
-        method: 'POST',
-        body,
-      }),
-    }),
-
-    getMe: builder.query<{ user: AuthResponse['user'] }, void>({
-      query: () => '/auth/me',
-    }),
-
-    updateProfile: builder.mutation<{ user: AuthResponse['user']; message: string }, { display_name?: string; preferences?: Record<string, unknown> }>({
-      query: (body) => ({
-        url: '/auth/profile',
-        method: 'PUT',
-        body,
-      }),
-    }),
-
-    // ── Workspaces ──
-    listWorkspaces: builder.query<{ workspaces: WorkspaceSummary[] }, void>({
-      query: () => '/workspaces',
-      providesTags: ['Workspace'],
-    }),
-
-    createWorkspace: builder.mutation<WorkspaceSummary, { name: string; description?: string }>({
-      query: (body) => ({
-        url: '/workspaces',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Workspace'],
-    }),
-
-    getWorkspace: builder.query<WorkspaceDetail, string>({
-      query: (id) => `/workspaces/${id}`,
-      providesTags: (_r, _e, id) => [{ type: 'Workspace', id }],
-    }),
-
-    updateWorkspace: builder.mutation<WorkspaceSummary, { id: string; name?: string; description?: string }>({
-      query: ({ id, ...body }) => ({
-        url: `/workspaces/${id}`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: (_r, _e, { id }) => [{ type: 'Workspace', id }],
-    }),
-
-    deleteWorkspace: builder.mutation<{ message: string; workspace_id: string; name: string }, string>({
-      query: (id) => ({
-        url: `/workspaces/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Workspace', 'Dataset'],
-    }),
-
-    addWorkspaceMember: builder.mutation<{ message: string; user_id: string; role: string }, { workspaceId: string; email: string; role: string }>({
-      query: ({ workspaceId, ...body }) => ({
-        url: `/workspaces/${workspaceId}/members`,
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: (_r, _e, { workspaceId }) => [{ type: 'Workspace', id: workspaceId }],
-    }),
-
-    removeWorkspaceMember: builder.mutation<{ message: string }, { workspaceId: string; userId: string }>({
-      query: ({ workspaceId, userId }) => ({
-        url: `/workspaces/${workspaceId}/members/${userId}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (_r, _e, { workspaceId }) => [{ type: 'Workspace', id: workspaceId }],
-    }),
+    // ── Auth / Workspaces retirés en mode open-source local ──
+    // Réactiver quand AUTH_ENABLED=true (cf. ARCHITECTURE.md)
 
     // ── Extensions ──
     generateExtension: builder.mutation<
@@ -806,6 +731,42 @@ export const api = createApi({
         method: 'POST',
         body,
       }),
+    }),
+
+    // ── Marketplace ──
+    listMarketplaceItems: builder.query<
+      { items: MarketplaceItemSummary[]; page: number; per_page: number; total: number; pages: number },
+      { category?: string; type?: string; featured?: boolean; page?: number; per_page?: number; search?: string } | void
+    >({
+      query: (params) => {
+        const p = new URLSearchParams();
+        if (params && 'category' in params && params.category) p.set('category', params.category);
+        if (params && 'type' in params && params.type) p.set('type', params.type);
+        if (params && 'featured' in params && params.featured !== undefined) p.set('featured', String(params.featured));
+        if (params && 'page' in params && params.page) p.set('page', String(params.page));
+        if (params && 'per_page' in params && params.per_page) p.set('per_page', String(params.per_page));
+        if (params && 'search' in params && params.search) p.set('search', params.search);
+        const qs = p.toString();
+        return `/marketplace${qs ? `?${qs}` : ''}`;
+      },
+      providesTags: ['Marketplace'],
+    }),
+
+    getMarketplaceItem: builder.query<MarketplaceItemDetail, string>({
+      query: (id) => `/marketplace/${id}`,
+    }),
+
+    exportMarketplaceItem: builder.query<MarketplaceItemDetail, string>({
+      query: (id) => `/marketplace/${id}/export`,
+    }),
+
+    importMarketplaceItem: builder.mutation<MarketplaceItemDetail, Record<string, unknown>>({
+      query: (body) => ({
+        url: '/marketplace/import',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Marketplace'],
     }),
   }),
 });
@@ -868,20 +829,7 @@ export const {
   useGetPartialDependenceMutation,
   useRunMonteCarloMutation,
   useRunStressTestMutation,
-  // Auth
-  useRegisterMutation,
-  useLoginMutation,
-  useRefreshTokenMutation,
-  useGetMeQuery,
-  useUpdateProfileMutation,
-  // Workspaces
-  useListWorkspacesQuery,
-  useCreateWorkspaceMutation,
-  useGetWorkspaceQuery,
-  useUpdateWorkspaceMutation,
-  useDeleteWorkspaceMutation,
-  useAddWorkspaceMemberMutation,
-  useRemoveWorkspaceMemberMutation,
+  useRunStationarityMutation,
   // Extensions
   useGenerateExtensionMutation,
   useSaveExtensionMutation,
@@ -889,7 +837,11 @@ export const {
   useListExtensionTemplatesQuery,
   useRunExtensionMutation,
   useRunExtensionCodeMutation,
-  useRunStationarityMutation,
+  // Marketplace
+  useListMarketplaceItemsQuery,
+  useGetMarketplaceItemQuery,
+  useExportMarketplaceItemQuery,
+  useImportMarketplaceItemMutation,
 } = api;
 
 export type StationarityResult = {

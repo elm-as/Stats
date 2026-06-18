@@ -2,41 +2,34 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User } from 'lucide-react';
 import logoOS from '../assets/logoOS.png';
-import { supabase } from '../lib/supabaseClient';
+import { useRegisterMutation } from '../store/api';
+import { useAppDispatch } from '../hooks';
+import { setCredentials } from '../store/slices/authSlice';
+import { extractErrorMessage } from '../components/ui/errorMessage';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [register, { isLoading }] = useRegisterMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signUp({
+      const credentials = await register({
         email,
         password,
-        options: {
-          data: {
-            display_name: displayName,
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      // Redirection après succès. Optionnellement, on pourrait afficher un message 
-      // si l'email de confirmation est requis par la configuration Supabase.
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de l'inscription");
-    } finally {
-      setIsLoading(false);
+        display_name: displayName,
+      }).unwrap();
+      dispatch(setCredentials(credentials));
+      navigate('/', { replace: true });
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, "Erreur lors de l'inscription"));
     }
   };
 
@@ -50,7 +43,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <img src={logoOS} alt="OpenStats" className="w-16 h-16 object-contain mx-auto mb-4 drop-shadow-lg" />
           <h1 className="text-2xl font-bold text-surface-50">Créer un compte</h1>
-          <p className="text-surface-400 text-sm mt-1">Rejoignez OpenStats avec Supabase</p>
+          <p className="text-surface-400 text-sm mt-1">Rejoignez votre espace OpenStats</p>
         </div>
 
         <form onSubmit={handleSubmit} className="glass rounded-2xl p-6 space-y-4">

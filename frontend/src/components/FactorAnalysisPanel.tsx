@@ -38,6 +38,7 @@ export default function FactorAnalysisPanel({ datasetId, capabilities, onBack, i
   const [selectedCols, setSelectedCols] = useState<string[]>([]);
   const [rowCol, setRowCol] = useState('');
   const [colCol, setColCol] = useState('');
+  const [autoComponents, setAutoComponents] = useState(true);
   const [nComponents, setNComponents] = useState(5);
 
   const [pcaResult, setPcaResult] = useState<PCAResult | null>(null);
@@ -63,14 +64,15 @@ export default function FactorAnalysisPanel({ datasetId, capabilities, onBack, i
     setMcaResult(null);
 
     try {
+      const comps = autoComponents ? undefined : nComponents;
       if (method === 'pca') {
         const cols = selectedCols.length > 0 ? selectedCols : undefined;
-        const r = await runPCA({ id: datasetId, columns: cols, n_components: nComponents }).unwrap();
+        const r = await runPCA({ id: datasetId, columns: cols, n_components: comps }).unwrap();
         setPcaResult(r);
       } else if (method === 'ca') {
         if (!rowCol || !colCol) { setError('Sélectionnez les deux variables'); return; }
         if (rowCol === colCol) { setError('Les deux variables doivent être différentes'); return; }
-        const r = await runCA({ id: datasetId, row_col: rowCol, col_col: colCol, n_components: nComponents }).unwrap();
+        const r = await runCA({ id: datasetId, row_col: rowCol, col_col: colCol, n_components: comps }).unwrap();
         setCaResult(r);
       } else if (method === 'mca') {
         const cols = selectedCols.length > 0 ? selectedCols : undefined;

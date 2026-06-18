@@ -1,43 +1,28 @@
-import { useState, useEffect } from 'react';
-import { User, Settings, Shield, Bell, Save, CheckCircle, Key } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '../hooks';
-import { useUpdateProfileMutation } from '../store/api';
-import { updateAccessToken } from '../store/slices/authSlice';
+import { useEffect, useState } from 'react';
+import { CheckCircle, Cpu, Key, Save, Settings } from 'lucide-react';
 
 export default function ProfilePage() {
-  const user = useAppSelector((state) => state.auth.user);
-  const dispatch = useAppDispatch();
-  const [updateProfile, { isLoading }] = useUpdateProfileMutation();
-
   const [activeTab, setActiveTab] = useState<'general' | 'ai'>('general');
-  const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-
-  // AI Keys state
   const [openaiKey, setOpenaiKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
+  const [llmEnabled, setLlmEnabled] = useState(true);
+  const [compactCharts, setCompactCharts] = useState(false);
   const [aiSuccess, setAiSuccess] = useState(false);
 
   useEffect(() => {
-    // Charger les clés API depuis le localStorage
     setOpenaiKey(localStorage.getItem('openai_api_key') || '');
     setGeminiKey(localStorage.getItem('gemini_api_key') || '');
+    setLlmEnabled(localStorage.getItem('llm_enabled') !== 'false');
+    setCompactCharts(localStorage.getItem('compact_charts') === 'true');
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSaveGeneral = (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccess(false);
-    setError('');
-
-    try {
-      const res = await updateProfile({ display_name: displayName }).unwrap();
-      dispatch(updateAccessToken({ access_token: localStorage.getItem('access_token') || '', user: res.user }));
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      setError('Erreur lors de la mise à jour du profil');
-    }
+    localStorage.setItem('llm_enabled', String(llmEnabled));
+    localStorage.setItem('compact_charts', String(compactCharts));
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 3000);
   };
 
   const handleSaveAiKeys = (e: React.FormEvent) => {
@@ -55,8 +40,8 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <header>
-        <h1 className="text-3xl font-bold text-surface-50 mb-2">Mon Profil</h1>
-        <p className="text-surface-400">Gérez vos informations personnelles et vos préférences IA</p>
+        <h1 className="text-3xl font-bold text-surface-50 mb-2">Paramètres locaux</h1>
+        <p className="text-surface-400">Réglez OpenStats pour votre machine, sans compte utilisateur et sans dépendance SaaS obligatoire.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -68,8 +53,8 @@ export default function ProfilePage() {
               activeTab === 'general' ? 'bg-accent-400/10 text-accent-400' : 'text-surface-400 hover:bg-surface-800/50 hover:text-surface-200'
             }`}
           >
-            <User className="w-4 h-4" />
-            Informations générales
+            <Settings className="w-4 h-4" />
+            Logiciel
           </button>
           <button 
             onClick={() => setActiveTab('ai')}
@@ -78,15 +63,7 @@ export default function ProfilePage() {
             }`}
           >
             <Key className="w-4 h-4" />
-            Fournisseurs d'IA (BYOK)
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-surface-400 hover:bg-surface-800/50 hover:text-surface-200 transition-all opacity-50 cursor-not-allowed">
-            <Settings className="w-4 h-4" />
-            Préférences
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-surface-400 hover:bg-surface-800/50 hover:text-surface-200 transition-all opacity-50 cursor-not-allowed">
-            <Shield className="w-4 h-4" />
-            Sécurité
+            IA locale / BYOK
           </button>
         </div>
 
@@ -94,82 +71,68 @@ export default function ProfilePage() {
         <div className="md:col-span-2 space-y-6">
           {activeTab === 'general' && (
             <>
-              <form onSubmit={handleSubmit} className="glass rounded-2xl p-6 space-y-6">
+              <form onSubmit={handleSaveGeneral} className="glass rounded-2xl p-6 space-y-6">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-400 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                    {user?.display_name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                    <Cpu className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-surface-50">{user?.display_name || 'Utilisateur'}</h3>
-                    <p className="text-sm text-surface-400">{user?.email}</p>
+                    <h3 className="text-lg font-semibold text-surface-50">Instance locale</h3>
+                    <p className="text-sm text-surface-400">Mode simple, local-first, sans comptes.</p>
                   </div>
                 </div>
 
                 {success && (
                   <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-green-400 text-sm flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
-                    Profil mis à jour avec succès
-                  </div>
-                )}
-
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm">
-                    {error}
+                    Paramètres locaux mis à jour
                   </div>
                 )}
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-surface-300 mb-1.5">Nom d'affichage</label>
+                  <label className="flex items-start gap-3 rounded-xl border border-surface-700/50 bg-surface-800/30 px-4 py-3">
                     <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full bg-surface-800/50 border border-surface-700/50 rounded-xl px-4 py-2.5 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-accent-400/40 focus:border-accent-400/40 transition-all"
-                      placeholder="Votre nom"
-                      required
+                      type="checkbox"
+                      checked={llmEnabled}
+                      onChange={(e) => setLlmEnabled(e.target.checked)}
+                      className="mt-1"
                     />
-                  </div>
+                    <div>
+                      <div className="text-sm text-surface-100 font-medium">Activer les fonctions IA optionnelles</div>
+                      <p className="text-xs text-surface-400 mt-1">Désactive les appels aux fournisseurs externes et garde OpenStats en mode purement local.</p>
+                    </div>
+                  </label>
 
-                  <div>
-                    <label className="block text-sm text-surface-300 mb-1.5">Email (non modifiable)</label>
+                  <label className="flex items-start gap-3 rounded-xl border border-surface-700/50 bg-surface-800/30 px-4 py-3">
                     <input
-                      type="email"
-                      value={user?.email || ''}
-                      disabled
-                      className="w-full bg-surface-800/30 border border-surface-700/50 rounded-xl px-4 py-2.5 text-surface-500 cursor-not-allowed"
+                      type="checkbox"
+                      checked={compactCharts}
+                      onChange={(e) => setCompactCharts(e.target.checked)}
+                      className="mt-1"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-surface-300 mb-1.5">Rôle</label>
-                    <input
-                      type="text"
-                      value={user?.role || 'Utilisateur Standard'}
-                      disabled
-                      className="w-full bg-surface-800/30 border border-surface-700/50 rounded-xl px-4 py-2.5 text-surface-500 cursor-not-allowed capitalize"
-                    />
-                  </div>
+                    <div>
+                      <div className="text-sm text-surface-100 font-medium">Mode graphiques compacts</div>
+                      <p className="text-xs text-surface-400 mt-1">Réduit l’encombrement visuel et aide sur les petites machines ou écrans.</p>
+                    </div>
+                  </label>
                 </div>
 
                 <div className="pt-6 border-t border-surface-700/50">
                   <button
                     type="submit"
-                    disabled={isLoading}
                     className="btn-primary px-6 py-2.5 flex items-center gap-2"
                   >
                     <Save className="w-4 h-4" />
-                    {isLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                    Enregistrer les paramètres
                   </button>
                 </div>
               </form>
 
-              <div className="glass rounded-2xl p-6 border-red-500/10">
-                <h4 className="text-red-400 font-semibold mb-2">Zone de danger</h4>
-                <p className="text-sm text-surface-400 mb-4">La suppression de votre compte est définitive et entraînera la perte de toutes vos données.</p>
-                <button className="text-red-400 text-sm font-medium hover:text-red-300 transition-colors">
-                  Supprimer mon compte
-                </button>
+              <div className="glass rounded-2xl p-6 border-emerald-500/10">
+                <h4 className="text-emerald-400 font-semibold mb-2">Philosophie du projet</h4>
+                <p className="text-sm text-surface-400">
+                  Cette version est pensée pour une utilisation locale, ouverte et simple. Pas de comptes, pas d’abonnement, pas de verrouillage serveur.
+                </p>
               </div>
             </>
           )}
@@ -179,7 +142,7 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-lg font-semibold text-surface-50 mb-2">Clés API d'Intelligence Artificielle</h3>
                 <p className="text-sm text-surface-400">
-                  Renseignez vos propres clés API pour débloquer les fonctionnalités d'analyse générative sans aucune limite. Ces clés sont stockées localement sur votre navigateur.
+                  Optionnel : utilisez vos propres clés API si vous voulez des fonctions génératives. Elles restent stockées localement dans votre navigateur.
                 </p>
               </div>
 
@@ -200,7 +163,7 @@ export default function ProfilePage() {
                     className="w-full bg-surface-800/50 border border-surface-700/50 rounded-xl px-4 py-2.5 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-accent-400/40 focus:border-accent-400/40 transition-all font-mono"
                     placeholder="sk-..."
                   />
-                  <p className="text-xs text-surface-500 mt-1">Nécessaire pour l'analyse NLP et les explications statistiques complexes.</p>
+                  <p className="text-xs text-surface-500 mt-1">Utile pour les explications statistiques avancées et certains résumés automatiques.</p>
                 </div>
 
                 <div>
@@ -212,7 +175,7 @@ export default function ProfilePage() {
                     className="w-full bg-surface-800/50 border border-surface-700/50 rounded-xl px-4 py-2.5 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-accent-400/40 focus:border-accent-400/40 transition-all font-mono"
                     placeholder="AIza..."
                   />
-                  <p className="text-xs text-surface-500 mt-1">Utilisé pour la génération de rapports rapides et les insights multimodaux.</p>
+                  <p className="text-xs text-surface-500 mt-1">Optionnel pour tester un autre fournisseur d’IA sans rien imposer au projet.</p>
                 </div>
               </div>
 

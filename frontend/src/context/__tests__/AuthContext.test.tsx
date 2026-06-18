@@ -31,6 +31,14 @@ const TestComponent = () => {
 };
 
 describe('AuthContext', () => {
+  // Ce fichier correspond à l'ancien mode SaaS/Supabase.
+  // Le projet open-source par défaut fonctionne sans authentification.
+  // On garde le test (désactivé) comme référence si l'option est réactivée.
+  if (import.meta.env.VITE_AUTH_ENABLED !== 'true') {
+    describe.skip('Mode auth désactivé', () => {});
+    return;
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

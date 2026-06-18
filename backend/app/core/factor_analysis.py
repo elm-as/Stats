@@ -28,16 +28,35 @@ def run_pca(df: pd.DataFrame, columns: list[str] | None = None, n_components: in
     variables = data.columns.tolist()
     n_obs, n_vars = data.shape
 
-    if n_components is None:
-        n_components = min(n_obs, n_vars)
-    n_components = min(n_components, n_vars, n_obs)
-
-    # Standardisation
+    # Standardisation (nécessaire avant calcul des valeurs propres pour Kaiser)
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(data)
 
     # Matrice de corrélation
     corr_matrix = np.corrcoef(X_scaled, rowvar=False)
+
+    # Calcul de toutes les valeurs propres pour la sélection automatique
+    all_eigenvalues = np.sort(np.linalg.eigvalsh(corr_matrix))[::-1]
+
+    auto_selection = None
+    if n_components is None:
+        # Critère de Kaiser : garder les composantes avec valeur propre > 1
+        kaiser_count = int(np.sum(all_eigenvalues > 1.0))
+        # Alternative : expliquer ≥ 80% de la variance
+        cumvar = np.cumsum(all_eigenvalues / all_eigenvalues.sum())
+        variance_80_count = int(np.argmax(cumvar >= 0.80)) + 1
+        # Prendre le max des deux critères, minimum 2, maximum n_vars
+        n_components = max(2, min(kaiser_count, n_vars, n_obs))
+        auto_selection = {
+            "method": "kaiser",
+            "kaiser_count": kaiser_count,
+            "variance_80_count": variance_80_count,
+            "selected": n_components,
+            "reason": f"Kaiser : {kaiser_count} composante(s) avec λ > 1"
+                if kaiser_count >= 2
+                else f"Minimum de 2 composantes (Kaiser suggère {kaiser_count})",
+        }
+    n_components = min(n_components, n_vars, n_obs)
 
     # Décomposition en valeurs propres
     eigenvalues, eigenvectors = np.linalg.eigh(corr_matrix)
@@ -50,7 +69,7 @@ def run_pca(df: pd.DataFrame, columns: list[str] | None = None, n_components: in
     # Variance expliquée
     total_var = eigenvalues.sum() if eigenvalues.sum() > 0 else 1
     explained_variance_ratio = eigenvalues / corr_matrix.shape[0]  # Sur total des valeurs propres
-    total_eigenvalues = np.sort(np.linalg.eigvalsh(corr_matrix))[::-1]
+    total_eigenvalues = all_eigenvalues
     explained_variance_ratio = eigenvalues / total_eigenvalues.sum()
     cumulative_variance = np.cumsum(explained_variance_ratio)
 
@@ -128,6 +147,7 @@ def run_pca(df: pd.DataFrame, columns: list[str] | None = None, n_components: in
             var: {"x": _safe(loadings[i, 0]), "y": _safe(loadings[i, 1]) if n_components >= 2 else 0}
             for i, var in enumerate(variables)
         },
+        "auto_selection": auto_selection,
     }
 
 

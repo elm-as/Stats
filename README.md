@@ -9,15 +9,13 @@ Importez vos données, construisez vos pipelines visuellement, exécutez des ana
 
 [![Status](https://img.shields.io/badge/Status-Operational-10b981?style=for-the-badge&logo=statuspage&logoColor=white)](#)
 [![Category](https://img.shields.io/badge/Category-Data_Science-black?style=for-the-badge&logo=micro-soft-academic&logoColor=white)](#)
-[![Build](https://img.shields.io/badge/Build-v1.0.4--4F8A-gray?style=for-the-badge&logo=githubactions&logoColor=white)](#)
-<br/>
-[![Live Demo](https://img.shields.io/badge/Demo-Try_it_Live-10b981?style=for-the-badge&logo=play&logoColor=white)](#)
+[![Build](https://img.shields.io/badge/Build-v1.1.0-gray?style=for-the-badge&logo=githubactions&logoColor=white)](#)
+[![Tests](https://img.shields.io/badge/Tests-120%20passed-10b981?style=for-the-badge&logo=pytest&logoColor=white)](#)
 
 </div>
 
 ---
 
-<!-- TODO: Remplacer par un vrai GIF montrant le drag & drop des noeuds -->
 ![OpenStats Demo](assets/demo.gif)
 
 > **💡 Try it out!** Importez notre [Dataset d'Exemple (Titanic.csv)](assets/titanic_example.csv) pour tester immédiatement la puissance du nettoyage auto et des analyses descriptives.
@@ -26,19 +24,22 @@ Importez vos données, construisez vos pipelines visuellement, exécutez des ana
 
 ## ✨ Ce qu'OpenStats sait déjà faire
 
-- **Canvas nodal configurable** interactif et fluide
-- **24+ analyses statistiques et ML** (Séries temporelles, Régression, Classification, Clustering, Factorielle...)
-- **Nettoyage automatique** et préparation des données
-- **Import** depuis des fichiers CSV / XLSX
-- **Interprétation IA (via API Gemini / LLM)** intégrée pour générer des insights textuels statistiques clairs
-- **Rapports automatiques** et export PDF professionnel
+- **Canvas nodal configurable** interactif et fluide (ReactFlow + Plotly)
+- **30+ analyses statistiques et ML** (Séries temporelles, Régression, Classification, Clustering, Factorielle, Simulation Monte Carlo...)
+- **Pipeline automatique intelligent** — détection du type de problème et construction de recette
+- **Nettoyage automatique** et préparation des données (typage, valeurs manquantes, outliers)
+- **Import** depuis des fichiers CSV / XLSX / JSON / JSONL (validation par magic bytes)
+- **Interprétation IA** (via Claude / LLM) intégrée pour générer des insights textuels statistiques clairs
+- **Rapports automatiques** et export PDF, DOCX, PPTX professionnels
+- **🧩 Marketplace** de templates et extensions partageables — catalogue intégré, import/export JSON
+- **Suspense & lazy-loading** pour des performances optimales sur les pages lourdes
 
 ---
 
 ## 🔄 Démo du workflow
 
 ```text
-       Données brutes (CSV/XLSX)
+       Données brutes (CSV/XLSX/JSON)
                   ↓
 Nettoyage & Préparation automatique
                   ↓
@@ -51,22 +52,57 @@ Analyses Statistiques & Machine Learning
 
 ---
 
+## 🧩 Marketplace
+
+OpenStats intègre une marketplace locale de **templates de pipeline** et **extensions** :
+
+| Template | Type | Description |
+|----------|------|-------------|
+| Analyse Descriptive Rapide | `descriptive` | Stats, corrélations, VIF, heatmap automatique |
+| Pipeline de Classification | `classification` | Nettoyage → entraînement compétitif → SHAP |
+| Prévision de Séries Temporelles | `timeseries` | Stationnarité → ARIMA/SARIMA → prévisions |
+| Analyse Factorielle (PCA) | `pca` | Scree plot, biplot, cercle de corrélations |
+| Nettoyage Automatique | `cleaning` | Typage → nettoyage → export propre |
+| Simulation Monte Carlo | `simulation` | Régression → sensibilité → distribution |
+
+- 📥 **Import/Export JSON** — partagez vos templates entre utilisateurs
+- ⭐ **Featured** — les templates les plus utiles en vedette
+- 🔍 **Recherche et filtres** par catégorie, type ou mot-clé
+
+---
+
+## 🛠️ Philosophie Open Source
+
+OpenStats est pensé comme une **app locale, gratuite et open-source** pour Data Scientists : pas de comptes, pas de paywall, pas de dépendance SaaS obligatoire.
+
+- Licence : **AGPLv3** (si quelqu'un modifie et redistribue, ou déploie une version accessible via réseau, il doit publier le code source des modifications).
+- Mode "SaaS" : volontairement **désactivé par défaut**, mais l'architecture garde la porte ouverte pour une réactivation future via feature flags (`AUTH_ENABLED`).
+- Sécurité : validation des fichiers par **magic bytes**, pas de `os.urandom()` en fallback production, caches thread-safe.
+
+---
+
 ## 🛠️ Stack Technique
 
 **Frontend**
-- ![React](https://img.shields.io/badge/-React-10b981?style=for-the-badge&logo=react&logoColor=white) React
-- ![TypeScript](https://img.shields.io/badge/-TypeScript-10b981?style=for-the-badge&logo=typescript&logoColor=white) TypeScript
+- ![React](https://img.shields.io/badge/-React-10b981?style=for-the-badge&logo=react&logoColor=white) React 18 + TypeScript (strict mode)
+- ![Vite](https://img.shields.io/badge/-Vite-10b981?style=for-the-badge&logo=vite&logoColor=white) Vite + TailwindCSS (dark theme custom)
+- ![Redux](https://img.shields.io/badge/-Redux_Toolkit-10b981?style=for-the-badge&logo=redux&logoColor=white) Redux Toolkit + RTK Query
+- ReactFlow (canvas nodal), Plotly.js (visualisations), Monaco Editor
 
 **Backend**
-- ![Flask](https://img.shields.io/badge/-Flask-10b981?style=for-the-badge&logo=flask&logoColor=white) Flask / Python 3.11
-- ![Celery](https://img.shields.io/badge/-Celery-10b981?style=for-the-badge&logo=celery&logoColor=white) Celery / Redis (Files d'attente asynchrones)
+- ![Flask](https://img.shields.io/badge/-Flask-10b981?style=for-the-badge&logo=flask&logoColor=white) Flask / Python 3.10+
+- ![Celery](https://img.shields.io/badge/-Celery-10b981?style=for-the-badge&logo=celery&logoColor=white) Celery / Redis (jobs asynchrones)
 
-**Database**
-- ![Supabase](https://img.shields.io/badge/-Supabase-10b981?style=for-the-badge&logo=supabase&logoColor=white) Supabase
-- ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-10b981?style=for-the-badge&logo=postgresql&logoColor=white) PostgreSQL
+**Stockage**
+- SQLite (par défaut) ou PostgreSQL + fichiers Parquet versionnés
 
 **Machine Learning & Data**
-- Pandas, NumPy, Scikit-Learn, SciPy, Statsmodels
+- Pandas, NumPy, Scikit-Learn, SciPy, Statsmodels, XGBoost, LightGBM, SHAP
+
+**Qualité**
+- ![Vitest](https://img.shields.io/badge/-Vitest-10b981?style=for-the-badge&logo=vitest&logoColor=white) Vitest + Testing Library (frontend)
+- ![Pytest](https://img.shields.io/badge/-Pytest-10b981?style=for-the-badge&logo=pytest&logoColor=white) Pytest 120+ tests (backend)
+- ![Playwright](https://img.shields.io/badge/-Playwright-10b981?style=for-the-badge&logo=playwright&logoColor=white) Playwright (E2E)
 
 ---
 
@@ -79,34 +115,81 @@ Si vous souhaitez faire tourner le projet en local, voici comment procéder :
 git clone https://github.com/elm-as/Stats.git
 cd Stats
 
-# 2. Installer les dépendances Backend
+# 2. Configuration (optionnel — des valeurs par défaut sont fournies pour le dev local)
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# 3. Installer les dépendances Backend
 cd backend
 python -m venv venv
 # Activer l'environnement virtuel (Windows: venv\Scripts\activate, Linux/Mac: source venv/bin/activate)
 pip install -r requirements.txt
 
-# 3. Installer les dépendances Frontend
+# 4. Installer les dépendances Frontend
 cd ../frontend
 npm install
 
-# 4. Lancer l'environnement de développement
+# 5. Lancer l'environnement de développement
 # Backend (dans un terminal)
-flask run
+cd backend
+python run.py
 
 # Frontend (dans un autre terminal)
+cd frontend
 npm run dev
+```
+
+### Variables d'environnement clés
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `SECRET_KEY` | auto (dev) | Clé secrète Flask — **obligatoire en production** |
+| `LOCAL_DEV_MODE` | `false` | Mode développement (admin auto-créé, SQLite, pas d'auth) |
+| `AUTH_ENABLED` | `false` | Active l'authentification multi-utilisateur |
+| `DATABASE_URL` | SQLite locale | PostgreSQL supporté (`postgresql://...`) |
+| `MAX_UPLOAD_MB` | `200` | Taille max des fichiers uploadés |
+| `ANTHROPIC_API_KEY` | — | Clé API Anthropic pour les insights IA |
+
+### Activer l'auth (optionnel)
+
+Par défaut, OpenStats tourne **sans authentification**. Pour réactiver l'auth (usage avancé / SaaS) :
+
+- Backend : `AUTH_ENABLED=true`
+- Frontend : `VITE_AUTH_ENABLED=true`
+- En mode dev : `LOCAL_DEV_MODE=true` + `AUTH_ENABLED=true` → admin créé automatiquement (`admin@labs.elmas.fr`)
+
+---
+
+## 🧪 Tests
+
+```bash
+# Backend — 120+ tests
+cd backend
+pytest tests/ -v
+
+# Frontend — tests unitaires
+cd frontend
+npm run test
+
+# Frontend — tests E2E
+npm run test:e2e
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] Canvas nodal interactif
-- [x] Import/Export de données (CSV, XLSX)
-- [x] 24+ Analyses statistiques et modèles ML
-- [x] Rapports PDF automatiques avec IA
+- [x] Canvas nodal interactif (ReactFlow)
+- [x] Import/Export de données (CSV, XLSX, JSON, JSONL)
+- [x] 30+ Analyses statistiques et modèles ML
+- [x] Rapports PDF, DOCX, PPTX automatiques avec IA
+- [x] Marketplace de modules et templates (import/export JSON)
+- [x] Pipeline automatique intelligent (auto-détection + recette)
+- [x] Validation des fichiers par magic bytes
+- [x] Cache thread-safe, pagination des APIs
 - [ ] Collaboration en temps réel
-- [ ] Marketplace de modules et templates
+- [ ] Export/import de workspace complet
+- [ ] Packaging desktop (Electron/Tauri)
 
 ---
 

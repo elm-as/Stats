@@ -9,6 +9,9 @@ from flask import request, jsonify
 from app.api.v1 import api_v1_bp
 from .nodes import execute_node
 from .nodes._shared import _sanitize
+import os
+import json
+import uuid
 
 
 def _topo_sort(nodes, edges):
@@ -114,3 +117,36 @@ def run_canvas_pipeline():
         "executed": len(results),
         "results": _sanitize(results),
     })
+
+@api_v1_bp.route("/canvas/share", methods=["POST"])
+def share_canvas():
+    """Crée un lien public en lecture seule pour un canvas."""
+    body = request.get_json()
+    if not body:
+        return jsonify({"error": "Body requis"}), 400
+        
+    share_id = str(uuid.uuid4())
+    share_dir = os.path.join(os.getcwd(), "data", "shares")
+    os.makedirs(share_dir, exist_ok=True)
+    
+    file_path = os.path.join(share_dir, f"{share_id}.json")
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(body, f)
+        
+    return jsonify({"success": True, "share_id": share_id, "url": f"/share/{share_id}"})
+
+@api_v1_bp.route("/canvas/share/<share_id>", methods=["GET"])
+def get_shared_canvas(share_id):
+    """Récupère un canvas partagé."""
+    if not share_id.replace("-", "").isalnum():
+        return jsonify({"error": "Invalid share ID"}), 400
+        
+    share_dir = os.path.join(os.getcwd(), "data", "shares")
+    file_path = os.path.join(share_dir, f"{share_id}.json")
+    if not os.path.exists(file_path):
+        return jsonify({"error": "Lien introuvable ou expiré"}), 404
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    return jsonify({"success": True, "data": data})

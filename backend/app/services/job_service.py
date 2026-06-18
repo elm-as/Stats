@@ -116,15 +116,22 @@ def get_job(job_id: str) -> dict | None:
     return job.to_dict() if job else None
 
 
-def list_jobs(dataset_id: str = None, status: str = None, limit: int = 50) -> list[dict]:
-    """Liste les jobs avec filtres optionnels."""
+def list_jobs(dataset_id: str = None, status: str = None, page: int = 1, per_page: int = 20) -> dict:
+    """Liste les jobs avec filtres optionnels et pagination."""
     query = Job.query.order_by(Job.created_at.desc())
     if dataset_id:
         query = query.filter_by(dataset_id=dataset_id)
     if status:
         query = query.filter_by(status=status)
-    jobs = query.limit(limit).all()
-    return [j.to_dict() for j in jobs]
+    total = query.count()
+    items = query.offset((page - 1) * per_page).limit(per_page).all()
+    return {
+        "jobs": [j.to_dict() for j in items],
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "pages": max(1, (total + per_page - 1) // per_page),
+    }
 
 
 def cancel_job(job_id: str) -> dict | None:

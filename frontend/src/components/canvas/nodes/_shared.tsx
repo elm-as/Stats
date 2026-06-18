@@ -1,7 +1,7 @@
-import React, { ChangeEvent } from 'react';
+import React, { ChangeEvent, useState } from 'react';
 import { Handle, Position, useNodes, useEdges } from '@xyflow/react';
 import { useGetDatasetQuery } from '../../../store/api';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronRight, Settings2 } from 'lucide-react';
 
 export interface CanvasNodeData extends Record<string, unknown> {
   onChange?: (id: string, key: string, value: string) => void;
@@ -38,6 +38,24 @@ export function NodeShell({
   hasOutput?: boolean;
   badge?: string;
 }) {
+  const runStatus = data.runStatus as string | undefined;
+  
+  let statusBorder = 'border-white/[0.08]';
+  let shadowGlow = 'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)] group-hover:shadow-[0_12px_50px_-8px_rgba(0,0,0,0.7)]';
+  
+  if (runStatus === 'processing') {
+    statusBorder = 'border-accent-400 ring-1 ring-accent-400/50';
+    shadowGlow = 'shadow-[0_0_20px_rgba(56,189,248,0.4)]';
+  } else if (runStatus === 'success') {
+    statusBorder = 'border-emerald-500 ring-1 ring-emerald-500/50';
+    shadowGlow = 'shadow-[0_0_20px_rgba(16,185,129,0.3)]';
+  } else if (runStatus === 'error') {
+    statusBorder = 'border-red-500 ring-1 ring-red-500/50';
+    shadowGlow = 'shadow-[0_0_20px_rgba(239,68,68,0.3)]';
+  } else if (runStatus === 'skipped') {
+    statusBorder = 'border-amber-500 ring-1 ring-amber-500/50';
+  }
+
   return (
     <div
       className="relative group"
@@ -45,7 +63,7 @@ export function NodeShell({
     >
       {hasInput && <Handle type="target" position={Position.Left} id="in" className="!w-3 !h-3 !bg-surface-300 !border-2 !border-surface-700 hover:!bg-accent-400 transition-colors" />}
 
-      <div className="rounded-2xl overflow-hidden shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)] border border-white/[0.08] bg-surface-900/90 backdrop-blur-2xl transition-all duration-200 group-hover:shadow-[0_12px_50px_-8px_rgba(0,0,0,0.7)] group-hover:border-white/[0.12]">
+      <div className={`rounded-2xl overflow-hidden bg-surface-900/90 backdrop-blur-2xl transition-all duration-300 border group-hover:border-white/[0.2] ${statusBorder} ${shadowGlow}`}>
         <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
 
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]">
@@ -55,7 +73,13 @@ export function NodeShell({
           >
             <Icon size={16} style={{ color }} />
           </div>
-          <span className="font-bold text-[13px] text-surface-100 tracking-wide">{title}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-[13px] text-surface-100 tracking-wide">{title}</span>
+            {runStatus === 'processing' && <Loader2 size={14} className="text-accent-400 animate-spin" />}
+            {runStatus === 'success' && <CheckCircle2 size={14} className="text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />}
+            {runStatus === 'error' && <XCircle size={14} className="text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" />}
+            {runStatus === 'skipped' && <AlertCircle size={14} className="text-amber-400" />}
+          </div>
           <div className="ml-auto flex items-center gap-2">
             {badge && (
               <span className="text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full border" style={{ color, borderColor: `${color}40`, background: `${color}10` }}>
@@ -118,26 +142,64 @@ export function useConnectedColumns(id: string) {
   const allNodes = useNodes();
   const allEdges = useEdges();
 
-  const getDatasetId = (): string | null => {
-    let currentId = id;
+  const walkBackwards = (): { dsId: string | null; excludedCols: Set<string>; typingNodeId: string | null } => {
+    let currentId: string | null = id;
     const visited = new Set<string>();
+    let dsId: string | null = null;
+    let excludedCols: Set<string> = new Set();
+    let typingNodeId: string | null = null;
+
     while (currentId) {
-      if (visited.has(currentId)) return null;
+      if (visited.has(currentId)) break;
       visited.add(currentId);
       const node = allNodes.find(n => n.id === currentId);
-      if (node?.type === 'dataset' && node.data?.file) return node.data.file as string;
+      if (node) {
+        if (node.type === 'typing') {
+          typingNodeId = node.id;
+          const raw = node.data?.excludedColumns;
+          if (raw) {
+            let parsed: string[] = [];
+            if (typeof raw === 'string') {
+              try { parsed = JSON.parse(raw); } catch { parsed = []; }
+            } else if (Array.isArray(raw)) {
+              parsed = raw as string[];
+            }
+            parsed.forEach(c => excludedCols.add(c));
+          }
+        }
+        if (node.type === 'dataset' && node.data?.file) {
+          dsId = node.data.file as string;
+          break;
+        }
+      }
       const parentEdge = allEdges.find(e => e.target === currentId);
-      if (!parentEdge) return null;
+      if (!parentEdge) break;
       currentId = parentEdge.source;
     }
-    return null;
+
+    return { dsId, excludedCols, typingNodeId };
   };
 
-  const dsId = getDatasetId();
+  const { dsId, excludedCols, typingNodeId } = walkBackwards();
   const { data: dataset } = useGetDatasetQuery(dsId!, { skip: !dsId });
-  
-  const columns: string[] = dataset?.profile?.dictionary?.map((c: any) => typeof c === 'string' ? c : (c.nom_brut || c.name || '')) || [];
-  return { dsId, dataset, columns };
+
+  const rawColumns: string[] = dataset?.profile?.dictionary?.map(
+    (c: any) => typeof c === 'string' ? c : (c.nom_brut || '')
+  ) || [];
+
+  const columns = excludedCols.size > 0
+    ? rawColumns.filter(c => !excludedCols.has(c))
+    : rawColumns;
+
+  const columnTypes: Record<string, string> = {};
+  if (dataset?.profile?.dictionary) {
+    for (const entry of dataset.profile.dictionary) {
+      const colName = typeof entry === 'string' ? entry : entry.nom_brut;
+      columnTypes[colName] = typeof entry === 'string' ? '?' : (entry.type_statistique || '?');
+    }
+  }
+
+  return { dsId, dataset, columns, excludedCols, typingNodeId, columnTypes };
 }
 
 export function NodeColumnSelect({ name, value, onChange, columns, placeholder = "-- Sélectionner --" }: { name: string; value?: string; onChange: (e: ChangeEvent<HTMLSelectElement>) => void; columns: string[], placeholder?: string }) {
@@ -194,6 +256,74 @@ export function NodeMultiColumnInput({ name, value, onChange, columns, placehold
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+export function NodeNumberInput({ name, value, onChange, placeholder, min, max, step = 1 }: { name: string; value?: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; placeholder: string; min?: number; max?: number; step?: number }) {
+  return (
+    <input
+      type="number"
+      name={name}
+      placeholder={placeholder}
+      defaultValue={value}
+      onChange={onChange}
+      min={min}
+      max={max}
+      step={step}
+      className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/[0.08] text-surface-100 text-[12px] font-medium placeholder:text-surface-600 focus:outline-none focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+    />
+  );
+}
+
+export function NodeToggle({ value, onChange }: { value?: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void }) {
+  const isAdvanced = value === 'advanced';
+  return (
+    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+      <div className="relative">
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={isAdvanced}
+          onChange={(e) => onChange({ target: { name: 'mode', value: e.target.checked ? 'advanced' : 'auto' } } as any)}
+        />
+        <div className={`w-8 h-4 rounded-full transition-colors ${isAdvanced ? 'bg-accent-500/60' : 'bg-white/10'}`}>
+          <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isAdvanced ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+        </div>
+      </div>
+      <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider">
+        {isAdvanced ? 'Avancé' : 'Auto'}
+      </span>
+    </label>
+  );
+}
+
+export function NodeCollapsible({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-t border-white/[0.06] pt-2 mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-1.5 text-[10px] font-semibold text-surface-500 uppercase tracking-wider hover:text-surface-300 transition-colors py-1"
+      >
+        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        {title}
+      </button>
+      {open && <div className="space-y-3 mt-2">{children}</div>}
+    </div>
+  );
+}
+
+export function NodeSeedInput({ value, onChange }: { value?: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void }) {
+  return (
+    <div>
+      <NodeLabel>Seed (reproductibilité)</NodeLabel>
+      <div className="flex items-center gap-2">
+        <NodeNumberInput name="seed" placeholder="Aléatoire" value={value} onChange={onChange} min={0} max={99999} />
+        {!value && <span className="text-[9px] text-surface-600 shrink-0">aléatoire</span>}
+        {value && <span className="text-[9px] text-accent-400 shrink-0">fixe</span>}
+      </div>
     </div>
   );
 }

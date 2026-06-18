@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 from app.api.v1 import api_v1_bp
 from app.services.dataset_service import dataset_manager
 from app.core.auth import login_required
+from app.core.ingestion import validate_file_magic
 from flask import g
 from app.models.dataset import Dataset
 from app.extensions import db
@@ -26,25 +27,29 @@ def upload_dataset():
     if "file" not in request.files:
         return jsonify({"error": "Aucun fichier envoyé"}), 400
 
-    # Vérification des quotas
-    MAX_DATASETS_PER_USER = 10
-    MAX_STORAGE_PER_USER_MB = 100
-
     user_id = g.current_user.id
-    user_datasets = Dataset.query.filter_by(uploaded_by=user_id).all()
-    
-    if len(user_datasets) >= MAX_DATASETS_PER_USER:
-        return jsonify({"error": f"Quota atteint : maximum {MAX_DATASETS_PER_USER} datasets autorisés."}), 403
-        
-    total_size_mb = sum((ds.file_size or 0) for ds in user_datasets) / (1024 * 1024)
-    
-    file = request.files["file"]
-    file.seek(0, os.SEEK_END)
-    file_length = file.tell()
-    file.seek(0)
-    
-    if total_size_mb + (file_length / (1024 * 1024)) > MAX_STORAGE_PER_USER_MB:
-        return jsonify({"error": f"Quota de stockage atteint : maximum {MAX_STORAGE_PER_USER_MB} Mo autorisés."}), 403
+
+    # Vérification des quotas (utile en mode multi-user / SaaS).
+    # En mode open-source (sans auth), on reste volontairement simple.
+    if current_app.config.get("AUTH_ENABLED", False):
+        MAX_DATASETS_PER_USER = 10
+        MAX_STORAGE_PER_USER_MB = 100
+
+        user_datasets = Dataset.query.filter_by(uploaded_by=user_id).all()
+
+        if len(user_datasets) >= MAX_DATASETS_PER_USER:
+            return jsonify({"error": f"Quota atteint : maximum {MAX_DATASETS_PER_USER} datasets autorisés."}), 403
+
+        total_size_mb = sum((ds.file_size or 0) for ds in user_datasets) / (1024 * 1024)
+
+        # La taille du fichier uploadé est comptée dans le quota.
+        file = request.files["file"]
+        file.seek(0, os.SEEK_END)
+        file_length = file.tell()
+        file.seek(0)
+
+        if total_size_mb + (file_length / (1024 * 1024)) > MAX_STORAGE_PER_USER_MB:
+            return jsonify({"error": f"Quota de stockage atteint : maximum {MAX_STORAGE_PER_USER_MB} Mo autorisés."}), 403
 
     file = request.files["file"]
     if file.filename == "" or not _allowed_file(file.filename):
@@ -55,6 +60,10 @@ def upload_dataset():
     os.makedirs(upload_dir, exist_ok=True)
     filepath = os.path.join(upload_dir, filename)
     file.save(filepath)
+
+    if not validate_file_magic(filepath, current_app.config["ALLOWED_EXTENSIONS"]):
+        os.remove(filepath)
+        return jsonify({"error": "Type de fichier invalide : le contenu ne correspond pas à l'extension"}), 400
 
     try:
         name = request.form.get("name", filename)
@@ -73,8 +82,10 @@ def upload_dataset():
 @api_v1_bp.route("/datasets", methods=["GET"])
 @login_required
 def list_datasets():
-    """Liste tous les datasets chargés."""
-    return jsonify(dataset_manager.list_datasets())
+    """Liste tous les datasets chargés (paginé)."""
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    return jsonify(dataset_manager.list_datasets(page=page, per_page=per_page))
 
 
 @api_v1_bp.route("/datasets/<dataset_id>", methods=["DELETE"])

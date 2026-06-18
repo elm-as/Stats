@@ -1,21 +1,21 @@
-"""
-Routes API pour l'authentification (v1).
-"""
+"""API v1 authentication routes."""
 
 import re
+
 import jwt as pyjwt
-from flask import request, jsonify, g
+from flask import g, jsonify, request
 
 from app.api.v1 import api_v1_bp
+from app.core.auth import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    login_required,
+    verify_password,
+)
 from app.extensions import db
 from app.models.user import User
-from app.core.auth import (
-    hash_password, verify_password,
-    create_access_token, create_refresh_token, decode_token,
-    login_required
-)
-
-from flask import current_app
 
 _EMAIL_RE = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
@@ -36,19 +36,6 @@ def auth_register():
         errors.append("Le nom est requis")
     if errors:
         return jsonify({"error": "Validation échouée", "details": errors}), 400
-
-    import os
-    if os.getenv("LOCAL_DEV_MODE", "true").lower() == "true":
-        return jsonify({
-            "user": {
-                "id": "dev-admin",
-                "email": "admin@labs.elmas.fr",
-                "display_name": "Administrateur Dev",
-                "role": "admin"
-            },
-            "access_token": "fake-local-token",
-            "refresh_token": "fake-local-refresh-token",
-        }), 201
 
     if db.session.query(User).filter_by(email=email).first():
         return jsonify({"error": "Cet email est déjà utilisé"}), 409
@@ -80,21 +67,8 @@ def auth_login():
     if not email or not password:
         return jsonify({"error": "Email et mot de passe requis"}), 400
 
-    import os
-    if os.getenv("LOCAL_DEV_MODE", "true").lower() == "true":
-        return jsonify({
-            "user": {
-                "id": "dev-admin",
-                "email": "admin@labs.elmas.fr",
-                "display_name": "Administrateur Dev",
-                "role": "admin"
-            },
-            "access_token": "fake-local-token",
-            "refresh_token": "fake-local-refresh-token",
-        })
-
     user = db.session.query(User).filter_by(email=email).first()
-    if not user or not verify_password(password, user.password_hash):
+    if not user or not user.password_hash or not verify_password(password, user.password_hash):
         return jsonify({"error": "Identifiants invalides"}), 401
 
     if not user.is_active:
@@ -149,7 +123,6 @@ def auth_me():
     return jsonify({"user": g.current_user.to_dict()})
 
 
-
 @api_v1_bp.route("/auth/profile", methods=["PUT"])
 @login_required
 def update_profile():
@@ -161,7 +134,7 @@ def update_profile():
 
     if display_name:
         user.display_name = display_name
-    
+
     if isinstance(preferences, dict):
         user.preferences = preferences
 
