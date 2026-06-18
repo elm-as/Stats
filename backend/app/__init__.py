@@ -126,7 +126,8 @@ def create_app(config_class=Config):
         raise RuntimeError("LOCAL_DEV_MODE=true est interdit avec FLASK_ENV=production.")
 
     # CORS : origines configurables (par défaut, restreint au frontend local)
-    allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+    allowed_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+    allowed_origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
     CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     # Ensure directories exist
