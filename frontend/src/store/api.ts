@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
+import { API_V1_BASE } from '../lib/apiBase';
 import type {
   DatasetSummary, DatasetDetail, PreviewData,
   CleaningResult, DescriptiveStats, CorrelationResult,
@@ -21,7 +22,7 @@ type PaginatedJobs = { jobs: JobStatus[]; page: number; per_page: number; total:
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_URL || ''}/api/v1`,
+    baseUrl: API_V1_BASE,
     prepareHeaders: (headers, { getState }) => {
       const authEnabled = import.meta.env.VITE_AUTH_ENABLED === 'true';
       if (authEnabled) {

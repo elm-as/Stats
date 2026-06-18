@@ -17,6 +17,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Play, Loader2, CheckCircle2, XCircle, AlertCircle, Share2, Copy } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { API_V1_BASE } from '../../lib/apiBase';
 
 import Sidebar from './Sidebar';
 import TemplateSelector from './TemplateSelector';
@@ -354,7 +355,7 @@ function DnDFlow() {
     try {
       const authEnabled = import.meta.env.VITE_AUTH_ENABLED === 'true';
       const token = authEnabled ? (localStorage.getItem('access_token') || '') : '';
-      const response = await fetch('/api/v1/canvas/run_pipeline', {
+      const response = await fetch(`${API_V1_BASE}/canvas/run_pipeline`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -421,7 +422,7 @@ function DnDFlow() {
     };
     
     try {
-      const response = await fetch('/api/v1/canvas/share', {
+      const response = await fetch(`${API_V1_BASE}/canvas/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pipeline),

@@ -24,3 +24,6 @@ htmlcov/
 frontend/test-results/
 frontend/playwright-report/
 frontend/.vite/
+
+# Local Netlify folder
+.netlify

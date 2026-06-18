@@ -5,6 +5,7 @@ import '@xyflow/react/dist/style.css';
 import { Loader2, AlertCircle, Home, CheckCircle2, XCircle } from 'lucide-react';
 import { nodeTypes, edgeTypes } from '../components/canvas/CanvasFlow';
 import CanvasResultModal from '../components/canvas/CanvasResultModal';
+import { API_V1_BASE } from '../lib/apiBase';
 
 export default function SharedCanvasPage() {
   const { shareId } = useParams();
@@ -17,7 +18,7 @@ export default function SharedCanvasPage() {
   useEffect(() => {
     async function fetchShared() {
       try {
-        const res = await fetch(`/api/v1/canvas/share/${shareId}`);
+        const res = await fetch(`${API_V1_BASE}/canvas/share/${shareId}`);
         const result = await res.json();
         if (result.success) {
           setData(result.data);
