@@ -8,13 +8,10 @@ from app.models.user import User
 @pytest.fixture
 def app():
     """Crée et configure une nouvelle instance de l'application pour chaque test."""
-    # S'assurer d'utiliser une DB en mémoire pour les tests
-    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-    # Désactiver le mode DEV local pour tester l'authentification réelle
+    os.environ["DATABASE_URL"] = "sqlite:///:memory:?cache=shared"
     os.environ["LOCAL_DEV_MODE"] = "false"
     os.environ["FLASK_ENV"] = "testing"
     os.environ["SECRET_KEY"] = "test-secret-key"
-    os.environ["SUPABASE_JWT_SECRET"] = "fake-supabase-jwt-secret-for-testing-only"
     
     app = create_app()
     

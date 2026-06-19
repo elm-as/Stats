@@ -50,28 +50,44 @@ def decode_token(token: str) -> dict:
 
 
 def _get_dev_user():
+    """Mode open-source : utilisateur par navigateur (X-Client-Id).
+    
+    Chaque navigateur reçoit un ID unique stocké en localStorage côté frontend.
+    Le backend lit cet ID, crée un User correspondant, et isole les datasets
+    (uploaded_by, list_datasets, delete, etc.) via cet ID.
+
+    Fallback : si pas de X-Client-Id (ancien frontend, tests), premier User existant.
+    """
     from app.extensions import db
 
-    # Mode "anonyme" : si le frontend envoie un identifiant stable par navigateur,
-    # on l'utilise comme user_id pour isoler les datasets entre visiteurs.
-    # IMPORTANT: User.id est VARCHAR(8) (et Dataset.uploaded_by aussi), donc 8 chars max.
-    dev_user_id = "devadmin"
+    # ── 1) Lire le X-Client-Id envoyé par le frontend ──
+    client_id = "dev-admin"  # fallback
     try:
-        client_id = (request.headers.get("X-Client-Id") or "").strip().lower()
-        if client_id and len(client_id) <= 8 and client_id.isalnum():
-            dev_user_id = client_id
+        header_val = (request.headers.get("X-Client-Id") or "").strip().lower()
+        if header_val and len(header_val) <= 8 and header_val.isalnum():
+            client_id = header_val
     except Exception:
         pass
 
-    user = db.session.get(User, dev_user_id) or db.session.query(User).first()
+    # ── 2) Chercher ou créer l'utilisateur ──
+    user = db.session.get(User, client_id)
     if user:
         return user
 
+    # Fallback : premier User existant (tests sans X-Client-Id).
+    user = db.session.query(User).first()
+    if user:
+        return user
+
+    # ── 3) Création automatique ──
+    from flask import current_app
+    current_app.logger.info("Nouveau navigateur: création user_id=%s", client_id)
     user = User(
-        id=dev_user_id,
-        email=f"anon+{dev_user_id}@openstats.local",
-        display_name=f"Visiteur {dev_user_id}",
+        id=client_id,
+        email=f"local+{client_id}@openstats.local",
+        display_name=f"Local {client_id}",
         role="admin",
+        is_active=True,
     )
     db.session.add(user)
     db.session.commit()

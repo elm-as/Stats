@@ -51,10 +51,18 @@ export default function Dashboard() {
               </Link>
             </div>
           </div>
-          <div className="hidden md:block shrink-0">
-            <div className="w-48 h-48 rounded-2xl bg-surface-800/50 border border-white/5 flex items-center justify-center">
+          <div className="hidden md:block shrink-0 text-center">
+            <div className="w-48 h-48 rounded-2xl bg-surface-800/50 border border-white/5 flex items-center justify-center mb-3">
               <img src={logoOS} alt="OpenStats" className="w-24 h-24 object-contain opacity-90" />
             </div>
+            <a
+              href="https://elmas.solutions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-[9px] font-black text-surface-500 hover:text-accent-400 uppercase tracking-[0.25em] transition-colors"
+            >
+              Powered by Elmas
+            </a>
           </div>
         </div>
       </section>
